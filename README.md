@@ -18,7 +18,7 @@ Moderna un viegli lietojama rēķinu sagatavošanas un pārvaldības sistēma, k
 ![Panelis](docs/images/dashboard.png)
 *Galvenais panelis ar apgrozījuma statistiku un ātrajām norādēm.*
 
-![Rēķini](docs/images/invoices.png)
+![Rēķini](docs/images/invoices_eds.png)
 *Rēķinu un klientu pārvaldības saraksts.*
 
 ![Iestatījumi](docs/images/settings.png)
