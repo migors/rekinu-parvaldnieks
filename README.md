@@ -32,11 +32,15 @@ Moderna un viegli lietojama rēķinu sagatavošanas un pārvaldības sistēma, k
 
 ## 🚀 Uzstādīšana un lietošana
 
-### 📥 Tiešā lejuplāde (Windows lietotājiem)
-Ja nevēlaties izmantot komandrindu, varat lejuplādēt gatavu programmu šeit:
-👉 **[Lejuplādēt NC_Invoice_Manager_v1.3.zip](https://github.com/migors/rekinu-parvaldnieks/raw/main/NC_Invoice_Manager_v1.3.zip)**
+### 📥 Instalācijas fails (Windows lietotājiem)
+Tagad programma ir pieejama kā klasiska, autonoma Windows aplikācija ar savu logu un instalatoru.
 
-*Instrukcija: Izpakojiet ZIP failu un palaidiet `InvoiceManager.exe`.*
+1. Lejuplādējiet instalācijas failu:
+👉 **[Lejuplādēt NC_Invoice_Manager_Setup.exe](https://github.com/migors/rekinu-parvaldnieks/raw/main/NC_Invoice_Manager_Setup.exe)**
+2. Palaidiet lejuplādēto failu un sekojiet instalācijas soļiem.
+3. Programma izveidos ikonu uz Jūsu darbvirsmas (Desktop) un būs atrodama "Start" izvēlnē.
+
+*(Piezīme: Tā kā kods ir jauns un nav parakstīts ar dārgu korporatīvo sertifikātu, Windows SmartScreen var parādīt brīdinājumu. Spiediet "More info" un "Run anyway".)*
 
 ---
 
