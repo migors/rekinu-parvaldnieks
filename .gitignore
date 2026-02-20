@@ -1,0 +1,26 @@
+# SQLite Database
+data/
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.env
+venv/
+env/
+
+# Build and Dist
+build/
+dist/
+*.spec
+*.zip
+
+# Logs
+*.log
+server_log.txt
+
+# VS Code
+.vscode/

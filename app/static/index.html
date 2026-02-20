@@ -1,0 +1,2478 @@
+﻿<!DOCTYPE html>
+<html lang="lv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Manager</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .tab-active {
+            border-bottom: 3px solid #3b82f6;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+
+        .stab-active {
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, .35);
+        }
+
+        .stab-btn:not(.stab-active) {
+            color: #94a3b8;
+        }
+
+        .stab-btn:not(.stab-active):hover {
+            background: rgba(255, 255, 255, .06);
+            color: #e2e8f0;
+        }
+
+        .fade-in {
+            animation: fadeIn .25s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-backdrop {
+            background: rgba(0, 0, 0, .45);
+            backdrop-filter: blur(4px);
+        }
+
+        input,
+        select,
+        textarea {
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen text-gray-100">
+
+    <!-- ═══════════════ NAVBAR ═══════════════ -->
+
+    <nav class="bg-slate-800/80 border-b border-slate-700 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-6 flex items-center justify-between h-16">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.reload()">
+                <div
+                    class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                    NC</div>
+                <span
+                    class="text-lg font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Invoice
+                    Manager</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <button id="tab-dashboard" onclick="switchTab('dashboard')"
+                    class="tab-btn px-3 py-2 rounded-lg text-sm hover:bg-slate-700/50 transition flex items-center gap-2 tab-active">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-blue-400"></i>
+                    Panelis
+                </button>
+                <button id="tab-invoices" onclick="switchTab('invoices')"
+                    class="tab-btn px-3 py-2 rounded-lg text-sm hover:bg-slate-700/50 transition flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i>
+                    Rēķini
+                </button>
+                <button id="tab-clients" onclick="switchTab('clients')"
+                    class="tab-btn px-3 py-2 rounded-lg text-sm hover:bg-slate-700/50 transition flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
+                    Klienti
+                </button>
+                <button id="tab-services" onclick="switchTab('services')"
+                    class="tab-btn px-3 py-2 rounded-lg text-sm hover:bg-slate-700/50 transition flex items-center gap-2">
+                    <i data-lucide="package" class="w-4 h-4 text-amber-400"></i>
+                    Pakalpojumi
+                </button>
+                <button id="tab-backup" onclick="switchTab('backup')"
+                    class="tab-btn px-3 py-2 rounded-lg text-sm hover:bg-slate-700/50 transition flex items-center gap-2">
+                    <i data-lucide="database" class="w-4 h-4 text-rose-400"></i>
+                    Rezerves kopija
+                </button>
+                <button id="tab-settings" onclick="switchTab('settings')"
+                    class="tab-btn px-3 py-2 rounded-lg text-sm hover:bg-slate-700/50 transition flex items-center gap-2">
+                    <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i>
+                    Iestatījumi
+                </button>
+                <div class="ml-4 border-l border-slate-600 pl-4 relative" id="profile-menu-container">
+                    <button onclick="toggleProfileMenu()"
+                        class="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg hover:shadow-indigo-500/30 hover:scale-105 transition-all"
+                        title="Lietotāja profils" id="profile-avatar">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                    </button>
+                    <!-- Profile Dropdown -->
+                    <div id="profile-dropdown"
+                        class="hidden absolute right-0 top-12 w-72 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 fade-in">
+                        <div class="px-4 py-3 border-b border-slate-700 flex items-center gap-3">
+                            <div
+                                class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                                <i data-lucide="user" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-white" id="profile-username">admin</p>
+                                <p class="text-xs text-slate-400">Administrators</p>
+                            </div>
+                        </div>
+                        <form onsubmit="updateProfile(event)" class="p-4 space-y-3">
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Profila iestatījumi
+                            </p>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Lietotājvārds</label>
+                                <input type="text" id="profile-new-username" placeholder="Jauns lietotājvārds"
+                                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Jaunā parole</label>
+                                <input type="password" id="profile-new-password" placeholder="Atstāt tukšu, ja nemainās"
+                                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Apstiprināt paroli</label>
+                                <input type="password" id="profile-confirm-password" placeholder="Atkārtot paroli"
+                                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div id="profile-pw-status" class="text-xs hidden"></div>
+                            <button type="submit"
+                                class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                                💾 Saglabāt izmaiņas
+                            </button>
+                        </form>
+                        <div class="px-4 pb-4">
+                            <button onclick="logout()"
+                                class="w-full flex items-center justify-center gap-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 px-4 py-2 rounded-lg text-sm transition-all">
+                                🚶 Iziet
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-6 py-8">
+
+        <!-- ═══════════════ DASHBOARD TAB ═══════════════ -->
+        <section id="sec-dashboard" class="hidden fade-in">
+            <div class="flex items-center justify-between mb-8">
+                <h2
+                    class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                    Sveicināti, <span id="dash-user">lietotāj</span>!
+                </h2>
+                <div class="text-sm text-slate-400" id="dash-date"></div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-slate-800/80 border border-slate-700 p-6 rounded-2xl shadow-xl">
+                    <div class="flex items-center gap-4 mb-2">
+                        <div class="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400">
+                            <i data-lucide="banknote" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="text-slate-400 text-sm font-medium">Neapmaksātie rēķini</h3>
+                    </div>
+                    <p class="text-3xl font-bold text-white" id="stat-unpaid">0.00 €</p>
+                </div>
+                <div class="bg-slate-800/80 border border-slate-700 p-6 rounded-2xl shadow-xl">
+                    <div class="flex items-center gap-4 mb-2">
+                        <div
+                            class="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
+                            <i data-lucide="trending-up" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="text-slate-400 text-sm font-medium">Apgrozījums šomēnes</h3>
+                    </div>
+                    <p class="text-3xl font-bold text-white" id="stat-turnover">0.00 €</p>
+                </div>
+                <div class="bg-slate-800/80 border border-slate-700 p-6 rounded-2xl shadow-xl">
+                    <div class="flex items-center gap-4 mb-2">
+                        <div
+                            class="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400">
+                            <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="text-slate-400 text-sm font-medium">Pēdējo 6 mēnešu tendence</h3>
+                    </div>
+                    <p class="text-sm text-slate-400">Grafiks zemāk</p>
+                </div>
+            </div>
+
+            <!-- Chart Row -->
+            <div class="bg-slate-800/80 border border-slate-700 p-6 rounded-2xl shadow-xl">
+                <h3 class="text-lg font-semibold mb-6">Mēneša ieņēmumi (EUR)</h3>
+                <div class="h-64 relative">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ BACKUP TAB ═══════════════ -->
+        <section id="sect-backup" class="hidden fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <h2
+                    class="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                    Rezerves kopija</h2>
+            </div>
+
+            <div
+                class="bg-slate-800 rounded-xl shadow-lg border border-slate-700 p-8 text-center max-w-2xl mx-auto mt-10">
+                <div class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-3xl">💾</span>
+                </div>
+                <h3 class="text-xl font-semibold mb-2 text-white">Lejupielādēt datubāzi</h3>
+                <p class="text-slate-400 mb-8">
+                    Saglabājiet pilnu rezerves kopiju (rēķini, klienti, iestatījumi) savā datorā.
+                    Šo failu vēlāk varēsiet izmantot, lai atjaunotu datus (vienkārši iekopējot to atpakaļ AppData mapē).
+                </p>
+
+                <a href="/api/backup/export" download="invoices_backup.db"
+                    class="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition transform hover:scale-105">
+                    ⬇️ Lejupielādēt failu (.db)
+                </a>
+
+                <div class="mt-8 text-xs text-slate-500 border-t border-slate-700 pt-6 text-left">
+                    <p class="font-semibold text-slate-400 mb-1">Kā atjaunot datus?</p>
+                    <ol class="list-decimal pl-4 space-y-1">
+                        <li>Aizveriet programmu.</li>
+                        <li>Nospiediet <b>Win+R</b> un ierakstiet: <code>%APPDATA%\InvoiceManager\data</code></li>
+                        <li>Aizstājiet esošo <code>invoices.db</code> failu ar šo lejupielādēto failu.</li>
+                        <li>Palaidiet programmu no jauna.</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ INVOICES TAB ═══════════════ -->
+        <section id="sec-invoices" class="fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Rēķini</h2>
+                <div class="flex gap-2">
+                    <button onclick="exportInvoicesCSV()"
+                        class="bg-slate-700 hover:bg-slate-600 text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold border border-slate-600 transition-all flex items-center gap-2"
+                        title="Eksportēt CSV">
+                        📊 CSV
+                    </button>
+                    <button onclick="syncGDrive()"
+                        class="bg-slate-700 hover:bg-slate-600 text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold border border-slate-600 transition-all flex items-center gap-2">
+                        ☁️ Drive
+                    </button>
+                    <button onclick="openInvoiceForm()"
+                        class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-lg hover:shadow-blue-500/25 transition-all">
+                        + Jauns rēķins
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Bar (Hidden by default) -->
+            <div id="invoices-action-bar"
+                class="hidden mb-4 bg-blue-900/30 border border-blue-500/50 rounded-lg p-3 flex items-center justify-between">
+                <div class="text-blue-300 text-sm font-semibold flex items-center gap-2">
+                    <span id="selected-count">0</span> rēķini iezīmēti
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="sendSelectedEDS()"
+                        class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow transition-all flex items-center gap-2">
+                        🚀 Sūtīt uz VID EDS
+                    </button>
+                    <button onclick="exportSelectedXML()"
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow transition-all flex items-center gap-2">
+                        📥 Eksportēt E-Rēķinus (XML)
+                    </button>
+                    <button onclick="exportSelectedCSV()"
+                        class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow transition-all flex items-center gap-2">
+                        📊 Eksportēt CSV
+                    </button>
+                    <button onclick="deleteSelectedInvoices()"
+                        class="bg-red-600/80 hover:bg-red-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow transition-all flex items-center gap-2 ml-4">
+                        ❌ Dzēst izvēlētos
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-4 flex flex-wrap items-center gap-3">
+                <div class="flex-1 min-w-48">
+                    <input type="text" id="invoice-search" placeholder="Meklēt rēķinu (numurs, klients)..."
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition"
+                        oninput="handleInvoiceSearch(this.value)">
+                </div>
+                <div>
+                    <select id="invoice-status-filter" onchange="handleInvoiceStatusFilter(this.value)"
+                        class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                        <option value="">Visi statusi</option>
+                        <option value="sent">Neapmaksāti</option>
+                        <option value="paid">Apmaksāti</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="date" id="invoice-date-from" onchange="handleInvoiceDateFilter()"
+                        class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                        title="No datuma">
+                    <span class="text-slate-500 text-xs">—</span>
+                    <input type="date" id="invoice-date-to" onchange="handleInvoiceDateFilter()"
+                        class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                        title="Līdz datumam">
+                </div>
+                <div>
+                    <select id="invoice-page-size" onchange="handlePageSizeChange(this.value)"
+                        class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                        <option value="10">10 / lapa</option>
+                        <option value="20">20 / lapa</option>
+                        <option value="50">50 / lapa</option>
+                        <option value="100">100 / lapa</option>
+                        <option value="500">500 / lapa</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bg-slate-800/60 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-700/50 text-gray-400 text-xs uppercase tracking-wider">
+                            <th class="py-3 px-4 text-left w-10">
+                                <input type="checkbox" id="selectAllInvoices" onclick="toggleAllInvoices(this.checked)"
+                                    class="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-slate-700 cursor-pointer">
+                            </th>
+                            <th class="py-3 px-4 text-left">Nr.</th>
+                            <th class="py-3 px-4 text-left">Klients</th>
+                            <th class="py-3 px-4 text-center">Datums</th>
+                            <th class="py-3 px-4 text-center">Termiņš</th>
+                            <th class="py-3 px-4 text-right">Summa</th>
+                            <th class="py-3 px-4 text-center">Apmaksāts</th>
+                            <th class="py-3 px-4 text-center">Darbības</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoices-tbody"></tbody>
+                </table>
+                <p id="invoices-empty" class="hidden text-center text-gray-500 py-12">Nav rēķinu. Nospiediet "+ Jauns
+                    rēķins", lai izveidotu.</p>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div id="invoice-pagination" class="mt-6 flex items-center justify-between text-sm text-slate-400 hidden">
+                <div id="pagination-info">Rāda 0 no 0 rēķiniem</div>
+                <div class="flex gap-2">
+                    <button id="btn-prev-page" onclick="changeInvoicePage(-1)"
+                        class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                        Iepriekšējā
+                    </button>
+                    <div id="pagination-pages" class="flex gap-1"></div>
+                    <button id="btn-next-page" onclick="changeInvoicePage(1)"
+                        class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                        Nākamā
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Script for Invoices -->
+        <script>
+            function renderInvoiceRow(inv) {
+                const isPaid = inv.status === 'paid';
+                const rowClass = isPaid ? 'bg-emerald-900/20 border-l-4 border-l-emerald-500' : 'border-b border-slate-700/50 hover:bg-slate-700/30';
+
+                return `
+        <tr class="${rowClass} transition hover:bg-slate-700/40">
+            <td class="py-3 px-4" onclick="event.stopPropagation()">
+                <input type="checkbox" value="${inv.id}" class="invoice-row-checkbox w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-slate-700 cursor-pointer" onchange="updateSelectedInvoices()">
+            </td>
+            <td class="py-3 px-4 font-medium">${esc(inv.invoice_number)}</td>
+            <td class="py-3 px-4 text-gray-300">${esc(inv.client ? inv.client.name : '-')}</td>
+            <td class="py-3 px-4 text-center text-gray-400 text-xs">${inv.date}</td>
+            <td class="py-3 px-4 text-center text-gray-400 text-xs">${inv.due_date}</td>
+            <td class="py-3 px-4 text-right font-medium text-gray-200">${inv.grand_total.toFixed(2)} €</td>
+            <td class="py-3 px-4 text-center">
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" class="w-5 h-5 rounded border-gray-600 text-emerald-500 focus:ring-emerald-500 bg-slate-700" 
+                        ${isPaid ? 'checked' : ''} 
+                        onchange="togglePaid(${inv.id}, this.checked)">
+                </label>
+            </td>
+            <td class="py-3 px-4 text-center">
+                <div class="flex justify-center gap-1">
+                    <button onclick="window.open('/api/invoices/${inv.id}/html', '_blank')" class="text-blue-400 hover:text-blue-300 text-lg transition" title="Skatīt HTML">👁️</button>
+                    <button onclick="window.open('/api/invoices/${inv.id}/pdf', '_blank')" class="text-gray-400 hover:text-white" title="PDF">📄</button>
+                    <button onclick="openSendEmailModal(${inv.id}, '${esc(inv.client ? inv.client.email || '' : '')}')" class="text-emerald-400 hover:text-emerald-300" title="Sūtīt e-pastu">✉️</button>
+                    <button onclick="editInvoice(${inv.id})" class="text-blue-400 hover:text-blue-300 text-xs transition">✏️</button>
+                    <button onclick="deleteInvoice(${inv.id})" class="text-red-500 hover:text-red-400 text-xs transition" title="Dzēst">❌</button>
+                </div>
+            </td>
+        </tr>
+    `;
+            }
+
+            // ── Bulk Selection & Export ──
+            let selectedInvoices = new Set();
+
+            function toggleAllInvoices(checked) {
+                const checkboxes = document.querySelectorAll('.invoice-row-checkbox');
+                checkboxes.forEach(cb => {
+                    cb.checked = checked;
+                    if (checked) selectedInvoices.add(parseInt(cb.value));
+                    else selectedInvoices.delete(parseInt(cb.value));
+                });
+                renderActionBar();
+            }
+
+            function updateSelectedInvoices() {
+                const checkboxes = document.querySelectorAll('.invoice-row-checkbox');
+                let allChecked = true;
+                selectedInvoices.clear();
+                checkboxes.forEach(cb => {
+                    if (cb.checked) selectedInvoices.add(parseInt(cb.value));
+                    else allChecked = false;
+                });
+
+                const selectAllCb = document.getElementById('selectAllInvoices');
+                if (selectAllCb) selectAllCb.checked = (checkboxes.length > 0 && allChecked);
+
+                renderActionBar();
+            }
+
+            function renderActionBar() {
+                const bar = document.getElementById('invoices-action-bar');
+                if (!bar) return;
+                const countSpan = document.getElementById('selected-count');
+                if (selectedInvoices.size > 0) {
+                    bar.classList.remove('hidden');
+                    countSpan.textContent = selectedInvoices.size;
+                } else {
+                    bar.classList.add('hidden');
+                }
+            }
+
+            async function exportSelectedXML() {
+                if (selectedInvoices.size === 0) return;
+                try {
+                    const ids = Array.from(selectedInvoices);
+                    const res = await fetch('/api/invoices/export/xml', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        },
+                        body: JSON.stringify({ invoice_ids: ids })
+                    });
+
+                    if (!res.ok) {
+                        toast('Kļūda eksportējot e-rēķinus', 'error');
+                        return;
+                    }
+
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const cd = res.headers.get('Content-Disposition');
+                    let filename = ids.length === 1 ? 'e_invoice.xml' : 'e_invoices.zip';
+                    if (cd && cd.indexOf('filename=') !== -1) {
+                        filename = cd.split('filename=')[1].replace(/"/g, '');
+                    }
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    const selectAllCb = document.getElementById('selectAllInvoices');
+                    if (selectAllCb) selectAllCb.checked = false;
+                    toggleAllInvoices(false);
+                    toast('E-rēķini lejupielādēti!', 'success');
+
+                } catch (err) {
+                    console.error('Export error:', err);
+                    toast('Eksporta kļūda', 'error');
+                }
+            }
+
+            async function exportSelectedCSV() {
+                if (selectedInvoices.size === 0) return;
+                try {
+                    const ids = Array.from(selectedInvoices);
+                    const res = await fetch('/api/invoices/export/csv/bulk', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        },
+                        body: JSON.stringify({ invoice_ids: ids })
+                    });
+
+                    if (!res.ok) {
+                        toast('Kļūda eksportējot CSV', 'error');
+                        return;
+                    }
+
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'invoices_selected.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    const selectAllCb = document.getElementById('selectAllInvoices');
+                    if (selectAllCb) selectAllCb.checked = false;
+                    toggleAllInvoices(false);
+                    toast('CSV lejupielādēts!', 'success');
+
+                } catch (err) {
+                    console.error('Export error:', err);
+                    toast('Eksporta kļūda', 'error');
+                }
+            }
+
+            async function sendSelectedEDS() {
+                if (selectedInvoices.size === 0) return;
+                try {
+                    const ids = Array.from(selectedInvoices);
+                    const res = await api('/api/invoices/send-eds', {
+                        method: 'POST',
+                        body: { invoice_ids: ids }
+                    });
+
+                    toast(`Nosūtīti uz EDS: ${res.success_count}, Kļūdas: ${res.error_count}`, res.error_count === 0 ? 'success' : 'error');
+
+                    if (res.error_count > 0 && res.errors.length > 0) {
+                        console.error("EDS kļūdas:", res.errors);
+                        alert("Daži rēķini netika nosūtīti: " + res.errors.map(e => `Rēķins ${e.invoice_id}: ${e.error}`).join("\\n"));
+                    }
+
+                    const selectAllCb = document.getElementById('selectAllInvoices');
+                    if (selectAllCb) selectAllCb.checked = false;
+                    toggleAllInvoices(false);
+                } catch (err) {
+                    console.error('EDS send error:', err);
+                    toast('Kļūda nosūtot uz EDS', 'error');
+                }
+            }
+
+            async function deleteSelectedInvoices() {
+                if (selectedInvoices.size === 0) return;
+                if (!confirm(`Tiešām dzēst ${selectedInvoices.size} iezīmētos rēķinus? Šī darbība ir neatgriezeniska!`)) return;
+
+                try {
+                    const ids = Array.from(selectedInvoices);
+                    const res = await api('/api/invoices/bulk-delete', {
+                        method: 'POST',
+                        body: { invoice_ids: ids }
+                    });
+
+                    toast(`${res.deleted || 0} rēķini veiksmīgi izdzēsti!`, 'success');
+
+                    // Reset selection
+                    selectedInvoices.clear();
+                    const selectAllCb = document.getElementById('selectAllInvoices');
+                    if (selectAllCb) selectAllCb.checked = false;
+                    renderActionBar();
+
+                    loadInvoices();
+                } catch (err) {
+                    console.error('Delete error:', err);
+                    toast('Kļūda dzēšot rēķinus', 'error');
+                }
+            }
+
+            async function changeInvoicePage(delta) {
+                invoicePage += delta;
+                await loadInvoices();
+            }
+
+            let invoiceSearchDebounce;
+            let invoiceStatusFilter = '';
+            let invoiceDateFrom = '';
+            let invoiceDateTo = '';
+
+            function handleInvoiceSearch(val) {
+                clearTimeout(invoiceSearchDebounce);
+                invoiceSearchDebounce = setTimeout(() => {
+                    invoiceSearchTerm = val.trim();
+                    invoicePage = 1;
+                    loadInvoices();
+                }, 300);
+            }
+
+            function handleInvoiceStatusFilter(val) {
+                invoiceStatusFilter = val;
+                invoicePage = 1;
+                loadInvoices();
+            }
+
+            function handleInvoiceDateFilter() {
+                invoiceDateFrom = document.getElementById('invoice-date-from').value;
+                invoiceDateTo = document.getElementById('invoice-date-to').value;
+                invoicePage = 1;
+                loadInvoices();
+            }
+
+            function handlePageSizeChange(val) {
+                invoicePageSize = parseInt(val);
+                invoicePage = 1; // Reset to first page
+                loadInvoices();
+            }
+
+            async function loadInvoices() {
+                let url = `/api/invoices?page=${invoicePage}&size=${invoicePageSize}&search=${encodeURIComponent(invoiceSearchTerm)}`;
+                if (invoiceStatusFilter) url += `&status=${invoiceStatusFilter}`;
+                if (invoiceDateFrom) url += `&date_from=${invoiceDateFrom}`;
+                if (invoiceDateTo) url += `&date_to=${invoiceDateTo}`;
+                const data = await api(url);
+
+                // Handle both paginated object and legacy array response
+                if (Array.isArray(data)) {
+                    invoices = data;
+                    // Mock pagination metadata for legacy array
+                    data.total = data.length;
+                    data.page = 1;
+                    data.size = data.length;
+                    data.pages = 1;
+                } else {
+                    invoices = data.items || [];
+                }
+
+                const tbody = document.getElementById('invoices-tbody');
+                const empty = document.getElementById('invoices-empty');
+                const paginationControls = document.getElementById('invoice-pagination');
+
+                if (!invoices || !invoices.length) {
+                    tbody.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    if (paginationControls) paginationControls.classList.add('hidden');
+                    return;
+                }
+                empty.classList.add('hidden');
+                if (paginationControls) paginationControls.classList.remove('hidden');
+
+                tbody.innerHTML = invoices.map(renderInvoiceRow).join('');
+
+                // Reset selection on load
+                selectedInvoices.clear();
+                const selectAllCb = document.getElementById('selectAllInvoices');
+                if (selectAllCb) selectAllCb.checked = false;
+                renderActionBar();
+
+                // Update pagination info
+                const total = data.total || invoices.length;
+                const pageNum = data.page || 1;
+                const pageSize = data.size || 10;
+                const totalPages = data.pages || 1;
+
+                const start = (pageNum - 1) * pageSize + 1;
+                const end = Math.min(pageNum * pageSize, total);
+                document.getElementById('pagination-info').textContent = `Rāda ${start}-${end} no ${total} rēķiniem`;
+
+                // Update buttons
+                document.getElementById('btn-prev-page').disabled = pageNum <= 1;
+                document.getElementById('btn-next-page').disabled = pageNum >= totalPages;
+
+                // Render page numbers
+                const pagesContainer = document.getElementById('pagination-pages');
+                if (pagesContainer) {
+                    pagesContainer.innerHTML = '';
+                    if (totalPages > 1) {
+                        for (let i = 1; i <= totalPages; i++) {
+                            const btn = document.createElement('button');
+                            btn.textContent = i;
+                            btn.className = `w-8 h-8 rounded-lg flex items-center justify-center transition ${i === pageNum ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-700 text-slate-400'}`;
+                            btn.onclick = () => { invoicePage = i; loadInvoices(); };
+                            pagesContainer.appendChild(btn);
+                        }
+                    }
+                }
+            }
+
+            async function togglePaid(id, isChecked) {
+                const newStatus = isChecked ? 'paid' : 'sent';
+                try {
+                    await api('/api/invoices/' + id, {
+                        method: 'PUT',
+                        body: { status: newStatus }
+                    });
+                    toast(isChecked ? 'Atzīmēts kā apmaksāts' : 'Atzīmēts kā neapmaksāts');
+                    loadInvoices();
+                } catch (e) {
+                    console.error(e);
+                    toast('Kļūda mainot statusu');
+                    loadInvoices();
+                }
+            }
+
+
+            function exportInvoicesCSV() {
+                window.location.href = '/api/invoices/export/csv';
+            }
+
+            // ── Email Modal ──────────────────────────────────────────────
+            let emailModalInvoiceId = null;
+
+            function openSendEmailModal(invoiceId, defaultEmail) {
+                emailModalInvoiceId = invoiceId;
+                document.getElementById('email-modal-to').value = defaultEmail || '';
+                document.getElementById('email-modal-status').textContent = '';
+                document.getElementById('email-modal').classList.remove('hidden');
+            }
+
+            function closeSendEmailModal() {
+                document.getElementById('email-modal').classList.add('hidden');
+                emailModalInvoiceId = null;
+            }
+
+            async function submitSendEmail(e) {
+                e.preventDefault();
+                const toEmail = document.getElementById('email-modal-to').value.trim();
+                if (!toEmail) return;
+                const statusEl = document.getElementById('email-modal-status');
+                statusEl.textContent = 'Sūta...';
+                statusEl.className = 'text-xs text-blue-400 mt-2';
+                try {
+                    await api(`/api/invoices/${emailModalInvoiceId}/send`, {
+                        method: 'POST',
+                        body: { to_email: toEmail }
+                    });
+                    statusEl.textContent = '✓ E-pasts nosūtīts!';
+                    statusEl.className = 'text-xs text-emerald-400 mt-2';
+                    setTimeout(closeSendEmailModal, 1500);
+                } catch (err) {
+                    statusEl.textContent = '✗ Kļūda: ' + (err.message || 'Neizdevās nosūtīt');
+                    statusEl.className = 'text-xs text-red-400 mt-2';
+                }
+            }
+        </script>
+
+        <!-- ═══════════════ CLIENTS TAB ═══════════════ -->
+        <section id="sec-clients" class="hidden fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Klienti</h2>
+                <button onclick="openClientModal()"
+                    class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-lg hover:shadow-blue-500/25 transition-all">
+                    + Jauns klients
+                </button>
+            </div>
+
+            <div class="mb-4 flex items-center gap-4">
+                <div class="flex-1">
+                    <input type="text" placeholder="Meklēt klientu (nosaukums, reģ. nr)..."
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition"
+                        oninput="handleClientSearch(this.value)">
+                </div>
+                <div>
+                    <select onchange="handleClientPageSizeChange(this.value)"
+                        class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                        <option value="10">10 / lapa</option>
+                        <option value="20">20 / lapa</option>
+                        <option value="50">50 / lapa</option>
+                        <option value="100">100 / lapa</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bg-slate-800/60 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-700/50 text-gray-400 text-xs uppercase tracking-wider">
+                            <th class="py-3 px-4 text-left">Nosaukums</th>
+                            <th class="py-3 px-4 text-left">Reģ. Nr.</th>
+                            <th class="py-3 px-4 text-left">PVN Nr.</th>
+                            <th class="py-3 px-4 text-left">Adrese</th>
+                            <th class="py-3 px-4 text-center">Darbības</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clients-tbody"></tbody>
+                </table>
+                <p id="clients-empty" class="hidden text-center text-gray-500 py-12">Nav klientu.</p>
+            </div>
+
+            <!-- Client Pagination -->
+            <div id="client-pagination" class="mt-6 flex items-center justify-between text-sm text-slate-400 hidden">
+                <div id="client-pagination-info">Rāda 0 no 0 klientiem</div>
+                <div class="flex gap-2">
+                    <button id="btn-client-prev-page" onclick="changeClientPage(-1)"
+                        class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                        Iepriekšējā
+                    </button>
+                    <div id="client-pagination-pages" class="flex gap-1"></div>
+                    <button id="btn-client-next-page" onclick="changeClientPage(1)"
+                        class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                        Nākamā
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ SERVICES TAB ═══════════════ -->
+        <section id="sec-services" class="hidden fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Pakalpojumi / Produkti</h2>
+                <button onclick="openServiceModal()"
+                    class="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-lg hover:shadow-purple-500/25 transition-all">
+                    + Jauns pakalpojums
+                </button>
+            </div>
+
+            <div class="mb-4 flex items-center gap-4">
+                <div class="flex-1">
+                    <input type="text" placeholder="Meklēt pakalpojumu (nosaukums)..."
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition"
+                        oninput="handleServiceSearch(this.value)">
+                </div>
+                <div>
+                    <select onchange="handleServicePageSizeChange(this.value)"
+                        class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                        <option value="10">10 / lapa</option>
+                        <option value="20">20 / lapa</option>
+                        <option value="50">50 / lapa</option>
+                        <option value="100">100 / lapa</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bg-slate-800/60 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-700/50 text-gray-400 text-xs uppercase tracking-wider">
+                            <th class="py-3 px-4 text-left">Nosaukums</th>
+                            <th class="py-3 px-4 text-left">Mērvienība</th>
+                            <th class="py-3 px-4 text-right">Cena (€)</th>
+                            <th class="py-3 px-4 text-right">PVN (%)</th>
+                            <th class="py-3 px-4 text-center">Darbības</th>
+                        </tr>
+                    </thead>
+                    <tbody id="services-tbody"></tbody>
+                </table>
+                <p id="services-empty" class="hidden text-center text-gray-500 py-12">Nav pakalpojumu.</p>
+            </div>
+
+            <!-- Service Pagination -->
+            <div id="service-pagination" class="mt-6 flex items-center justify-between text-sm text-slate-400 hidden">
+                <div id="service-pagination-info">Rāda 0 no 0 pakalpojumiem</div>
+                <div class="flex gap-2">
+                    <button id="btn-service-prev-page" onclick="changeServicePage(-1)"
+                        class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                        Iepriekšējā
+                    </button>
+                    <div id="service-pagination-pages" class="flex gap-1"></div>
+                    <button id="btn-service-next-page" onclick="changeServicePage(1)"
+                        class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                        Nākamā
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ SETTINGS TAB ═══════════════ -->
+        <section id="sec-settings" class="hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6">Iestatījumi</h2>
+
+            <!-- Settings Sub-tabs -->
+            <div class="flex gap-1 mb-6 bg-slate-800/60 p-1 rounded-xl border border-slate-700 w-fit flex-wrap">
+                <button id="stab-btn-company" onclick="switchSettingsTab('company')"
+                    class="stab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all stab-active">
+                    🏢 Uzņēmums
+                </button>
+                <button id="stab-btn-email" onclick="switchSettingsTab('email')"
+                    class="stab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                    ✉️ E-pasts
+                </button>
+                <button id="stab-btn-gdrive" onclick="switchSettingsTab('gdrive')"
+                    class="stab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                    ☁️ Google Drive
+                </button>
+                <button id="stab-btn-eds" onclick="switchSettingsTab('eds')"
+                    class="stab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                    🏛️ VID EDS API
+                </button>
+            </div>
+
+            <!-- ── TAB: UZņĒMUMS ── -->
+            <div id="stab-company" class="fade-in">
+                <form onsubmit="saveCompanySettings(event)"
+                    class="bg-slate-800/60 rounded-xl border border-slate-700 p-6 shadow-xl space-y-6">
+                    <!-- 1. Invoice Prefix -->
+                    <h3 class="text-sm font-semibold text-blue-400">Rēķina numerācija</h3>
+                    <div class="flex gap-4 items-end">
+                        <div class="w-1/3">
+                            <label class="block text-xs text-gray-400 mb-1">Rēķina prefikss</label>
+                            <input id="s-invoice_prefix" placeholder="NC"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white font-mono uppercase"
+                                title="Mainot prefiksu, numerācija sāksies no 1">
+                        </div>
+                        <div class="w-2/3">
+                            <p class="text-xs text-slate-500 pb-2">Mainot prefiksu (piem. uz "R"), nākamais rēķins būs
+                                R-000001.</p>
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-700/50">
+
+                    <!-- 2. Company Details -->
+                    <h3 class="text-sm font-semibold text-blue-400">Uzņēmuma rekvizīti</h3>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Uzņēmuma nosaukums</label>
+                            <input id="s-company_name"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500"
+                                placeholder="SIA Mans Uzņēmums">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Reģ. Nr.</label>
+                            <input id="s-reg_number"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">PVN Nr.</label>
+                            <input id="s-vat_number"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        </div>
+                        <div class="flex items-end gap-4">
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-400 mb-1">PVN režīms</label>
+                                <select id="s-vat_enabled"
+                                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                                    <option value="true">PVN maksātājs (21%)</option>
+                                    <option value="false">Nav PVN maksātājs</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Juridiskā adrese</label>
+                            <input id="s-legal_address"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Tālrunis</label>
+                            <input id="s-phone"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">E-pasts (uzņēmuma)</label>
+                            <input id="s-email"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-700/50">
+
+                    <!-- 3. Bank Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-sm font-semibold text-blue-400 mb-3">🏦 Banka Nr. 1</h3>
+                            <div class="space-y-3">
+                                <div><label class="block text-xs text-gray-400 mb-1">Bankas nosaukums</label>
+                                    <input id="s-bank1_name"
+                                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                                </div>
+                                <div><label class="block text-xs text-gray-400 mb-1">SWIFT</label>
+                                    <input id="s-bank1_swift"
+                                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                                </div>
+                                <div><label class="block text-xs text-gray-400 mb-1">Konta Nr.</label>
+                                    <input id="s-bank1_account"
+                                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-blue-400 mb-3">🏦 Banka Nr. 2</h3>
+                            <div class="space-y-3">
+                                <div><label class="block text-xs text-gray-400 mb-1">Bankas nosaukums</label>
+                                    <input id="s-bank2_name"
+                                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                                </div>
+                                <div><label class="block text-xs text-gray-400 mb-1">SWIFT</label>
+                                    <input id="s-bank2_swift"
+                                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                                </div>
+                                <div><label class="block text-xs text-gray-400 mb-1">Konta Nr.</label>
+                                    <input id="s-bank2_account"
+                                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-700/50">
+
+                    <!-- 4. Logo -->
+                    <div class="bg-slate-700/30 p-4 rounded-xl border border-slate-600/50">
+                        <h3 class="text-sm font-semibold text-blue-400 mb-3 flex items-center gap-2">🖼️ Uzņēmuma logo
+                        </h3>
+                        <div class="flex items-center gap-6">
+                            <div id="logo-preview-container"
+                                class="w-24 h-24 bg-slate-800 rounded-lg border border-slate-600 flex items-center justify-center overflow-hidden">
+                                <span id="logo-placeholder" class="text-slate-500 text-xs">Nav logo</span>
+                                <img id="logo-img" class="hidden max-w-full max-h-full object-contain">
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs text-slate-400 mb-3">Augšupielādējiet JPG vai PNG attēlu. Tas tiks
+                                    parādīts visos rēķinos.</p>
+                                <input type="file" id="logo-upload" accept="image/*" class="hidden"
+                                    onchange="previewLogo(event)">
+                                <button type="button" onclick="document.getElementById('logo-upload').click()"
+                                    class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition">
+                                    Izvēlēties attēlu
+                                </button>
+                                <button type="button" onclick="removeLogo()" id="btn-remove-logo"
+                                    class="hidden ml-2 text-red-500 hover:text-red-400 text-sm">Noņemt</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="s-logo_base64">
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit"
+                            class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-lg transition-all">
+                            💾 Saglabāt uzņēmuma iestatījumus
+                        </button>
+                        <span id="settings-saved" class="ml-3 text-emerald-400 text-sm hidden">✓ Saglabāts!</span>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ── TAB: E-PASTS ── -->
+            <div id="stab-email" class="hidden fade-in">
+                <form onsubmit="saveEmailSettings(event)"
+                    class="bg-slate-800/60 rounded-xl border border-slate-700 p-6 shadow-xl space-y-5">
+                    <div class="flex items-start gap-3 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                        <span class="text-blue-400 text-lg">ℹ️</span>
+                        <div class="text-xs text-slate-300">
+                            <p class="font-semibold text-blue-300 mb-1">Kā konfigurēt Gmail SMTP?</p>
+                            <ol class="list-decimal list-inside space-y-1 text-slate-400">
+                                <li>Google kontā ieslēdziet 2-faktoru autentifikāciju</li>
+                                <li>Dodieties uz <b>myaccount.google.com &rarr; Drošība &rarr; App passwords</b></li>
+                                <li>Izveidojiet jaunu app password un ievadiet to zemāk</li>
+                                <li>Serveris: <code class="bg-slate-800 px-1 rounded">smtp.gmail.com</code>, ports:
+                                    <code class="bg-slate-800 px-1 rounded">587</code>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">SMTP serveris</label>
+                            <input id="s-smtp_server" placeholder="smtp.gmail.com"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">SMTP ports</label>
+                            <input id="s-smtp_port" placeholder="587" type="number"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Lietotājvārds (e-pasta adrese)</label>
+                            <input id="s-smtp_username" placeholder="tavs@gmail.com" type="email"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Parole / App Password</label>
+                            <input id="s-smtp_password" type="password" placeholder="••••••••••••••••"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Sūtītāja adrese (From)</label>
+                            <input id="s-smtp_from_email" placeholder="tavs@gmail.com" type="email"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Šifrēšana</label>
+                            <select id="s-smtp_tls"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                                <option value="true">STARTTLS (ports 587) — ieteicams</option>
+                                <option value="false">Nav šifrēšanas (ports 25)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 pt-2 flex-wrap">
+                        <button type="submit"
+                            class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-lg transition-all">
+                            💾 Saglabāt e-pasta iestatījumus
+                        </button>
+                        <button type="button" onclick="testSmtp()"
+                            class="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all">
+                            🧪 Nosūtīt testa e-pastu
+                        </button>
+                        <span id="email-settings-saved" class="text-emerald-400 text-sm hidden">✓ Saglabāts!</span>
+                    </div>
+                    <div id="smtp-test-status" class="text-xs hidden"></div>
+                </form>
+            </div>
+
+            <!-- ── TAB: GOOGLE DRIVE ── -->
+            <div id="stab-gdrive" class="hidden fade-in">
+                <form onsubmit="saveGdriveSettings(event)"
+                    class="bg-slate-800/60 rounded-xl border border-slate-700 p-6 shadow-xl space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Saglabāt PDF Google Drive</label>
+                            <select id="s-gdrive_enabled"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                                <option value="false">Nē</option>
+                                <option value="true">Jā</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Google Drive Folder ID</label>
+                            <input id="s-gdrive_folder_id" placeholder="1A2B3C4D5E6F..."
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Google Cloud Client ID</label>
+                            <input id="s-gdrive_client_id" placeholder="...apps.googleusercontent.com"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white font-mono text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Google Cloud Client Secret</label>
+                            <input type="password" id="s-gdrive_client_secret" placeholder="GOCSPX-..."
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white font-mono text-xs">
+                        </div>
+                    </div>
+                    <div
+                        class="flex items-center justify-between bg-slate-700/30 p-3 rounded-lg border border-slate-600/50">
+                        <div>
+                            <p class="text-xs text-gray-400">Statuss:</p>
+                            <p id="gdrive-status" class="text-sm font-semibold text-gray-500">Nav piesleģts</p>
+                        </div>
+                        <button type="button" onclick="connectGoogle()"
+                            class="bg-white text-gray-900 hover:bg-gray-100 px-4 py-2 rounded-lg text-sm font-semibold shadow-lg transition-all flex items-center gap-2">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-4 h-4">
+                            Piesleģties ar Google
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500">
+                        ℹ️ Jums jāizveido <b>OAuth 2.0 Client ID</b> Google Cloud Console.<br>
+                        Authorized redirect URI: <code
+                            class="bg-slate-800 px-1 py-0.5 rounded select-all">http://localhost:8000/api/gdrive/callback</code>
+                    </p>
+                    <div class="pt-2">
+                        <button type="submit"
+                            class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-lg transition-all">
+                            💾 Saglabāt Google Drive iestatījumus
+                        </button>
+                        <span id="gdrive-settings-saved" class="ml-3 text-emerald-400 text-sm hidden">✓
+                            Saglabāts!</span>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ── TAB: VID EDS API ── -->
+            <div id="stab-eds" class="hidden fade-in">
+                <form onsubmit="saveEdsSettings(event)"
+                    class="bg-slate-800/60 rounded-xl border border-slate-700 p-6 shadow-xl space-y-5">
+                    <div class="flex items-start gap-3 bg-fuchsia-500/10 border border-fuchsia-500/30 rounded-lg p-4">
+                        <span class="text-fuchsia-400 text-lg">ℹ️</span>
+                        <div class="text-xs text-slate-300">
+                            <p class="font-semibold text-fuchsia-300 mb-1">VID EDS API Pieslēgums</p>
+                            <p>Šeit varat konfigurēt tiešo e-rēķinu sūtīšanu uz VID EDS no sistēmas.</p>
+                            <p class="mt-1">Pirms lietošanas, jums VID EDS sistēmā (Iestatījumi -> API) jāģenerē sava
+                                API atslēga.</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Iespējot VID EDS sūtīšanu</label>
+                            <select id="s-eds_enabled"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                                <option value="false">Nē</option>
+                                <option value="true">Jā</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">VID EDS API Atslēga</label>
+                            <input id="s-eds_api_key" type="password" placeholder="Jūsu API atslēga..."
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white font-mono">
+                        </div>
+                    </div>
+                    <div class="pt-2">
+                        <button type="submit"
+                            class="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-lg transition-all">
+                            💾 Saglabāt EDS iestatījumus
+                        </button>
+                        <span id="eds-settings-saved" class="ml-3 text-emerald-400 text-sm hidden">✓
+                            Saglabāts!</span>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- ═══════════════ INVOICE FORM (inline) ═══════════════ -->
+
+        <!-- ═══════════════ INVOICE FORM (inline) ═══════════════ -->
+        <section id="sec-invoice-form" class="hidden fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Jauns rēķins</h2>
+                <button onclick="cancelInvoiceForm()" class="text-gray-400 hover:text-white text-sm transition">✕
+                    Atcelt</button>
+            </div>
+            <form onsubmit="submitInvoice(event)"
+                class="bg-slate-800/60 rounded-xl border border-slate-700 p-6 shadow-xl space-y-6">
+                <input type="hidden" id="inv-id">
+                <div class="grid grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Klients *</label>
+                        <select id="inv-client" required
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                            <option value="">— Izvēlieties klientu —</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Datums *</label>
+                        <input id="inv-date" type="date" required
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Apmaksas termiņš *</label>
+                        <input id="inv-due" type="date" required
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Rēķinu izrakstīja</label>
+                        <input id="inv-issuer"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"
+                            placeholder="Vārds Uzvārds">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Piezīmes</label>
+                        <input id="inv-notes"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                </div>
+
+                <!-- Line items -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-blue-400">📋 Pozīcijas</h3>
+                        <div class="flex gap-2">
+                            <select id="service-picker" onchange="addServiceItem()"
+                                class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-white">
+                                <option value="">📦 Pievienot no kataloga...</option>
+                            </select>
+                            <button type="button" onclick="addLineItem()"
+                                class="text-xs bg-slate-700 hover:bg-slate-600 border border-slate-600 text-blue-400 px-3 py-1.5 rounded-lg transition">
+                                + Tukša pozīcija
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-700/40 rounded-lg border border-slate-600 overflow-hidden">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-gray-400 text-xs uppercase tracking-wider bg-slate-700/60">
+                                    <th class="py-2 px-3 text-left">Apraksts</th>
+                                    <th class="py-2 px-3 text-center w-20">Mērv.</th>
+                                    <th class="py-2 px-3 text-right w-20">Daudz.</th>
+                                    <th class="py-2 px-3 text-right w-24">Cena</th>
+                                    <th class="py-2 px-3 text-right w-24">Summa</th>
+                                    <th class="py-2 px-3 w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="line-items-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="flex justify-end mt-3 text-sm">
+                        <div class="w-80 space-y-1">
+                            <div class="flex justify-between text-gray-400"><span>Kopā (EUR):</span><span
+                                    id="calc-subtotal">0.00</span></div>
+                            <div class="flex justify-between text-gray-400"><span>PVN 0% (EUR):</span><span
+                                    id="calc-vat">0.00</span></div>
+                            <div class="flex justify-between text-gray-400"><span>Summa ar PVN (EUR):</span><span
+                                    id="calc-total-with-vat">0.00</span></div>
+                            <div class="flex justify-between font-bold text-blue-400 border-t border-slate-600 pt-1">
+                                <span>Kopā apmaksai (EUR):</span><span id="calc-total">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit"
+                    class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-lg transition-all">
+                    ✓ Izveidot rēķinu
+                </button>
+            </form>
+        </section>
+
+    </main>
+
+    <!-- ═══════════════ CLIENT MODAL ═══════════════ -->
+    <div id="client-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg mx-4 fade-in">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+                <h3 id="client-modal-title" class="text-lg font-bold">Jauns klients</h3>
+                <button onclick="closeClientModal()"
+                    class="text-gray-400 hover:text-white text-xl transition">&times;</button>
+            </div>
+            <Form id="client-form" onsubmit="submitClient(event)" class="p-6 space-y-4">
+                <input type="hidden" id="c-id">
+                <div class="relative">
+                    <label class="block text-xs text-gray-400 mb-1">Nosaukums *</label>
+                    <input id="c-name" required autocomplete="off"
+                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500">
+                    <div id="c-name-list"
+                        class="hidden absolute z-50 w-full bg-slate-700 border border-slate-600 rounded-b-lg shadow-xl max-h-48 overflow-y-auto top-full left-0 mt-1">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Reģ. Nr.</label>
+                        <input id="c-reg"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">PVN Nr.</label>
+                        <input id="c-vat"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Juridiskā adrese</label>
+                        <input id="c-address"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Pasta indekss</label>
+                        <input id="c-postal-code"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Banka</label>
+                        <input id="c-bank"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">SWIFT</label>
+                        <input id="c-swift"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Konta Nr.</label>
+                        <input id="c-account"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">E-pasts (rēķinu sūtīšanai)</label>
+                    <input id="c-email" type="email"
+                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"
+                        placeholder="klients@example.com">
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeClientModal()"
+                        class="px-4 py-2 text-sm text-gray-400 hover:text-white transition">Atcelt</button>
+                    <button type="submit"
+                        class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow transition-all">
+                        Saglabāt
+                    </button>
+                </div>
+            </Form>
+        </div>
+    </div>
+
+    <!-- ═══════════════ EMAIL SEND MODAL ═══════════════ -->
+    <div id="email-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 fade-in">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+                <h3 class="text-lg font-bold flex items-center gap-2">✉️ Sūtīt rēķinu pa e-pastu</h3>
+                <button onclick="closeSendEmailModal()"
+                    class="text-gray-400 hover:text-white text-xl transition">&times;</button>
+            </div>
+            <form onsubmit="submitSendEmail(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Saņēmēja e-pasta adrese *</label>
+                    <input id="email-modal-to" type="email" required
+                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500"
+                        placeholder="klients@example.com">
+                </div>
+                <p class="text-xs text-slate-500">Rēķins tiks nosūtīts kā PDF pielikums. SMTP iestatījumi jākonfigurē
+                    Iestatījumu sadaļā.</p>
+                <div id="email-modal-status" class="text-xs mt-2"></div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeSendEmailModal()"
+                        class="px-4 py-2 text-sm text-gray-400 hover:text-white transition">Atcelt</button>
+                    <button type="submit"
+                        class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow transition-all">
+                        ✉️ Sūtīt
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════════ SERVICE MODAL ═══════════════ -->
+    <div id="service-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 fade-in">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+                <h3 id="service-modal-title" class="text-lg font-bold">Jauns pakalpojums</h3>
+                <button onclick="closeServiceModal()"
+                    class="text-gray-400 hover:text-white text-xl transition">&times;</button>
+            </div>
+            <form id="service-form" onsubmit="submitService(event)" class="p-6 space-y-4">
+                <input type="hidden" id="svc-id">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Nosaukums *</label>
+                    <input id="svc-name" required
+                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"
+                        placeholder="Pakalpojuma vai produkta nosaukums">
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Mērvienība</label>
+                        <input id="svc-unit" value="gab."
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Cena (EUR)</label>
+                        <input id="svc-price" type="number" step="0.01" min="0" value="0"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">PVN %</label>
+                        <select id="svc-vat"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                            <option value="21">21%</option>
+                            <option value="0">0% (bez PVN)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeServiceModal()"
+                        class="px-4 py-2 text-sm text-gray-400 hover:text-white transition">Atcelt</button>
+                    <button type="submit"
+                        class="bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow transition-all">
+                        Saglabāt
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════════ TOAST ═══════════════ -->
+    <div id="toast"
+        class="hidden fixed bottom-6 right-6 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-medium z-50 fade-in">
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        //  AUTH
+        // ═══════════════════════════════════════════════════════════════
+        const TOKEN_KEY = 'token';
+        function getToken() { return localStorage.getItem(TOKEN_KEY); }
+
+        function logout() {
+            localStorage.removeItem(TOKEN_KEY);
+            document.cookie = 'token=; path=/; max-age=0';
+            window.location.href = '/login';
+        }
+
+        // Check auth on page load
+        (async function checkAuth() {
+            const token = getToken();
+            if (!token) { window.location.href = '/login'; return; }
+            try {
+                const r = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!r.ok) throw new Error();
+                // Initial load
+                switchTab('dashboard');
+            } catch {
+                logout();
+            }
+        })();
+
+        // ═══════════════════════════════════════════════════════════════
+        //  STATE
+        // ═══════════════════════════════════════════════════════════════
+        let clients = [];
+        let invoices = [];
+        let invoicePage = 1;
+        let invoiceSearchTerm = '';
+        let invoicePageSize = 10;
+        let services = [];
+        let settingsData = {};
+
+        // ═══════════════════════════════════════════════════════════════
+        //  API HELPERS
+        // ═══════════════════════════════════════════════════════════════
+        const api = (path, opts = {}) => {
+            const token = getToken();
+            opts.headers = { ...opts.headers };
+            if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+            if (opts.body && typeof opts.body === 'object') {
+                opts.body = JSON.stringify(opts.body);
+                opts.headers['Content-Type'] = 'application/json';
+            }
+            return fetch(path, opts).then(r => {
+                if (r.status === 401) { logout(); throw new Error('Unauthorized'); }
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            });
+        };
+
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 2500);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  DASHBOARD
+        // ═══════════════════════════════════════════════════════════════
+        let revenueChart = null;
+
+        async function loadDashboard() {
+            try {
+                const stats = await api('/api/stats');
+                document.getElementById('stat-unpaid').textContent = stats.unpaid_total.toFixed(2) + ' €';
+                document.getElementById('stat-turnover').textContent = stats.monthly_turnover.toFixed(2) + ' €';
+
+                const user = await api('/api/auth/me');
+                document.getElementById('dash-user').textContent = user.username;
+                document.getElementById('dash-date').textContent = new Date().toLocaleDateString('lv-LV', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+                renderChart(stats.monthly_data);
+            } catch (e) {
+                console.error('Failed to load dashboard:', e);
+            }
+        }
+
+        function renderChart(monthlyData) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
+
+            revenueChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthlyData.map(d => d.label),
+                    datasets: [{
+                        label: 'Ieņēmumi',
+                        data: monthlyData.map(d => d.total),
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        hoverBackgroundColor: 'rgba(59, 130, 246, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TABS
+        // ═══════════════════════════════════════════════════════════════
+        function switchTab(name) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+            // Some tabs might not have a button (like invoice-form)
+            const btn = document.getElementById('tab-' + name);
+            if (btn) btn.classList.add('tab-active');
+
+            ['dashboard', 'invoices', 'clients', 'services', 'backup', 'settings', 'invoice-form'].forEach(s => {
+                const el = document.getElementById('sec-' + s) || document.getElementById('sect-' + s);
+                if (el) el.classList.add('hidden');
+            });
+            const target = document.getElementById('sec-' + name) || document.getElementById('sect-' + name);
+            if (target) target.classList.remove('hidden');
+
+            if (name === 'dashboard') loadDashboard();
+            if (name === 'invoices') loadInvoices();
+            if (name === 'clients') loadClients();
+            if (name === 'services') loadServices();
+            if (name === 'settings') loadSettings();
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  CLIENTS
+        // ═══════════════════════════════════════════════════════════════
+
+        let clientPage = 1;
+        let clientPageSize = 10;
+        let clientSearchTerm = '';
+
+        async function changeClientPage(delta) {
+            clientPage += delta;
+            await loadClients();
+        }
+
+        let clientSearchDebounce;
+        function handleClientSearch(val) {
+            clearTimeout(clientSearchDebounce);
+            clientSearchDebounce = setTimeout(() => {
+                clientSearchTerm = val.trim();
+                clientPage = 1;
+                loadClients();
+            }, 300);
+        }
+
+        function handleClientPageSizeChange(val) {
+            clientPageSize = parseInt(val);
+            clientPage = 1;
+            loadClients();
+        }
+
+        async function loadClients() {
+            const url = `/api/clients?page=${clientPage}&size=${clientPageSize}&search=${encodeURIComponent(clientSearchTerm)}`;
+            const data = await api(url);
+
+            const tbody = document.getElementById('clients-tbody');
+            const empty = document.getElementById('clients-empty');
+            const paginationControls = document.getElementById('client-pagination');
+
+            // Handle both paginated object and legacy array response
+            if (Array.isArray(data)) {
+                clients = data;
+                data.total = data.length;
+                data.page = 1;
+                data.size = data.length;
+                data.pages = 1;
+            } else {
+                clients = data.items || [];
+            }
+
+            if (!clients.length) {
+                tbody.innerHTML = '';
+                empty.classList.remove('hidden');
+                if (paginationControls) paginationControls.classList.add('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            if (paginationControls) paginationControls.classList.remove('hidden');
+
+            tbody.innerHTML = clients.map(c => `
+        <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
+            <td class="py-3 px-4 font-medium">${esc(c.name)}</td>
+            <td class="py-3 px-4 text-gray-400">${esc(c.reg_number)}</td>
+            <td class="py-3 px-4 text-gray-400">${esc(c.vat_number)}</td>
+            <td class="py-3 px-4 text-gray-400 text-xs">${esc(c.legal_address)}</td>
+            <td class="py-3 px-4 text-center">
+                <button onclick="editClient(${c.id})" class="text-blue-400 hover:text-blue-300 text-xs mr-2 transition">✏️ Labot</button>
+                <button onclick="deleteClient(${c.id})" class="text-red-500 hover:text-red-400 text-xs transition" title="Dzēst">❌</button>
+            </td>
+        </tr>
+    `).join('');
+
+            // Update pagination info
+            const total = data.total || clients.length;
+            const pageNum = data.page || 1;
+            const pageSize = data.size || 10;
+            const totalPages = data.pages || 1;
+
+            const start = (pageNum - 1) * pageSize + 1;
+            const end = Math.min(pageNum * pageSize, total);
+            const infoEl = document.getElementById('client-pagination-info');
+            if (infoEl) infoEl.textContent = `Rāda ${start}-${end} no ${total} klientiem`;
+
+            // Update buttons
+            const prevBtn = document.getElementById('btn-client-prev-page');
+            const nextBtn = document.getElementById('btn-client-next-page');
+            if (prevBtn) prevBtn.disabled = pageNum <= 1;
+            if (nextBtn) nextBtn.disabled = pageNum >= totalPages;
+
+            // Render page numbers
+            const pagesContainer = document.getElementById('client-pagination-pages');
+            if (pagesContainer) {
+                pagesContainer.innerHTML = '';
+                if (totalPages > 1) {
+                    for (let i = 1; i <= totalPages; i++) {
+                        const btn = document.createElement('button');
+                        btn.textContent = i;
+                        btn.className = `w-8 h-8 rounded-lg flex items-center justify-center transition ${i === pageNum ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-700 text-slate-400'}`;
+                        btn.onclick = () => { clientPage = i; loadClients(); };
+                        pagesContainer.appendChild(btn);
+                    }
+                }
+            }
+        }
+
+        function openClientModal(c = null) {
+            document.getElementById('client-modal-title').textContent = c ? 'Labot klientu' : 'Jauns klients';
+            document.getElementById('c-id').value = c ? c.id : '';
+            document.getElementById('c-name').value = c ? c.name : '';
+            document.getElementById('c-reg').value = c ? c.reg_number : '';
+            document.getElementById('c-vat').value = c ? c.vat_number : '';
+            document.getElementById('c-address').value = c ? c.legal_address : '';
+            document.getElementById('c-bank').value = c ? c.bank_name : '';
+            document.getElementById('c-swift').value = c ? c.bank_swift : '';
+            document.getElementById('c-account').value = c ? c.bank_account : '';
+            document.getElementById('c-postal-code').value = c ? (c.postal_code || '') : '';
+            document.getElementById('c-email').value = c ? (c.email || '') : '';
+            document.getElementById('client-modal').classList.remove('hidden');
+        }
+
+        function closeClientModal() { document.getElementById('client-modal').classList.add('hidden'); }
+        function editClient(id) { openClientModal(clients.find(c => c.id === id)); }
+
+        async function submitClient(e) {
+            e.preventDefault();
+            const id = document.getElementById('c-id').value;
+            const data = {
+                name: document.getElementById('c-name').value,
+                reg_number: document.getElementById('c-reg').value,
+                vat_number: document.getElementById('c-vat').value,
+                legal_address: document.getElementById('c-address').value,
+                postal_code: document.getElementById('c-postal-code').value,
+                bank_name: document.getElementById('c-bank').value,
+                bank_swift: document.getElementById('c-swift').value,
+                bank_account: document.getElementById('c-account').value,
+                email: document.getElementById('c-email').value,
+            };
+            if (id) {
+                await api('/api/clients/' + id, { method: 'PUT', body: data });
+                toast('Klients atjaunināts');
+            } else {
+                await api('/api/clients', { method: 'POST', body: data });
+                toast('Klients pievienots');
+            }
+            closeClientModal();
+            loadClients();
+        }
+
+        async function deleteClient(id) {
+            if (!confirm('Vai tiešām dzēst šo klientu?')) return;
+            await api('/api/clients/' + id, { method: 'DELETE' });
+            toast('Klients dzēsts');
+            loadClients();
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  AUTOCOMPLETE
+        // ═══════════════════════════════════════════════════════════════
+        let debounceTimer;
+        const nameInput = document.getElementById('c-name');
+        const nameList = document.getElementById('c-name-list');
+
+        nameInput.addEventListener('input', function (e) {
+            const val = this.value;
+            clearTimeout(debounceTimer);
+            if (!val || val.length < 2) {
+                nameList.classList.add('hidden');
+                return;
+            }
+
+            debounceTimer = setTimeout(async () => {
+                try {
+                    // toast('Meklē: ' + val); // Debug
+                    const results = await api('/api/clients/search?q=' + encodeURIComponent(val));
+                    // toast('Atrasti: ' + results.length); // Debug
+                    renderSuggestions(results);
+                } catch (err) {
+                    console.error('Search error', err);
+                    toast('Kļūda meklējot: ' + err.message);
+                }
+            }, 300);
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            if (e.target !== nameInput && e.target !== nameList) {
+                nameList.classList.add('hidden');
+            }
+        });
+
+        function renderSuggestions(items) {
+            nameList.innerHTML = '';
+            if (!items.length) {
+                nameList.classList.add('hidden');
+                return;
+            }
+
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'px-3 py-2 hover:bg-slate-600 cursor-pointer text-sm border-b border-slate-600/50 last:border-0';
+                div.innerHTML = `
+                    <div class="font-medium text-white">${esc(item.name)}</div>
+                    <div class="text-xs text-gray-400 flex justify-between">
+                        <span>${item.reg_number}</span>
+                        <span>${item.legal_address || ''}</span>
+                    </div>
+                `;
+                div.addEventListener('click', function () {
+                    selectCompany(item);
+                });
+                nameList.appendChild(div);
+            });
+            nameList.classList.remove('hidden');
+        }
+
+        function selectCompany(item) {
+            document.getElementById('c-name').value = item.name;
+            document.getElementById('c-reg').value = item.reg_number;
+            document.getElementById('c-vat').value = item.vat_number;
+            document.getElementById('c-address').value = item.legal_address;
+            document.getElementById('c-postal-code').value = item.postal_code || '';
+            nameList.classList.add('hidden');
+        }
+
+
+
+        // ═══════════════════════════════════════════════════════════════
+        //  SERVICES
+        // ═══════════════════════════════════════════════════════════════
+
+        let servicePage = 1;
+        let servicePageSize = 10;
+        let serviceSearchTerm = '';
+
+        async function changeServicePage(delta) {
+            servicePage += delta;
+            await loadServices();
+        }
+
+        let serviceSearchDebounce;
+        function handleServiceSearch(val) {
+            clearTimeout(serviceSearchDebounce);
+            serviceSearchDebounce = setTimeout(() => {
+                serviceSearchTerm = val.trim();
+                servicePage = 1;
+                loadServices();
+            }, 300);
+        }
+
+        function handleServicePageSizeChange(val) {
+            servicePageSize = parseInt(val);
+            servicePage = 1;
+            loadServices();
+        }
+
+        async function loadServices() {
+            const url = `/api/services?page=${servicePage}&size=${servicePageSize}&search=${encodeURIComponent(serviceSearchTerm)}`;
+            const data = await api(url);
+
+            const tbody = document.getElementById('services-tbody');
+            const empty = document.getElementById('services-empty');
+            const paginationControls = document.getElementById('service-pagination');
+
+            // Handle both paginated object and legacy array response
+            if (Array.isArray(data)) {
+                services = data;
+                data.total = data.length;
+                data.page = 1;
+                data.size = data.length;
+                data.pages = 1;
+            } else {
+                services = data.items || [];
+            }
+
+            if (!services.length) {
+                tbody.innerHTML = '';
+                empty.classList.remove('hidden');
+                if (paginationControls) paginationControls.classList.add('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            if (paginationControls) paginationControls.classList.remove('hidden');
+
+            tbody.innerHTML = services.map(s => `
+        <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
+            <td class="py-3 px-4 font-medium">${esc(s.name)}</td>
+            <td class="py-3 px-4 text-gray-400">${esc(s.unit)}</td>
+            <td class="py-3 px-4 text-right text-gray-300">${s.default_price.toFixed(2)}</td>
+            <td class="py-3 px-4 text-right text-gray-300">${s.vat_rate}%</td>
+            <td class="py-3 px-4 text-center">
+                <button onclick="editService(${s.id})" class="text-blue-400 hover:text-blue-300 text-xs mr-2 transition">✏️ Labot</button>
+                <button onclick="deleteService(${s.id})" class="text-red-500 hover:text-red-400 text-xs transition" title="Dzēst">❌</button>
+            </td>
+        </tr>
+    `).join('');
+
+            // Update pagination info
+            const total = data.total || services.length;
+            const pageNum = data.page || 1;
+            const pageSize = data.size || 10;
+            const totalPages = data.pages || 1;
+
+            const start = (pageNum - 1) * pageSize + 1;
+            const end = Math.min(pageNum * pageSize, total);
+            const infoEl = document.getElementById('service-pagination-info');
+            if (infoEl) infoEl.textContent = `Rāda ${start}-${end} no ${total} pakalpojumiem`;
+
+            // Update buttons
+            const prevBtn = document.getElementById('btn-service-prev-page');
+            const nextBtn = document.getElementById('btn-service-next-page');
+            if (prevBtn) prevBtn.disabled = pageNum <= 1;
+            if (nextBtn) nextBtn.disabled = pageNum >= totalPages;
+
+            // Render page numbers
+            const pagesContainer = document.getElementById('service-pagination-pages');
+            if (pagesContainer) {
+                pagesContainer.innerHTML = '';
+                if (totalPages > 1) {
+                    for (let i = 1; i <= totalPages; i++) {
+                        const btn = document.createElement('button');
+                        btn.textContent = i;
+                        btn.className = `w-8 h-8 rounded-lg flex items-center justify-center transition ${i === pageNum ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-700 text-slate-400'}`;
+                        btn.onclick = () => { servicePage = i; loadServices(); };
+                        pagesContainer.appendChild(btn);
+                    }
+                }
+            }
+        }
+
+        function openServiceModal(s = null) {
+            document.getElementById('service-modal-title').textContent = s ? 'Labot pakalpojumu' : 'Jauns pakalpojums';
+            document.getElementById('svc-id').value = s ? s.id : '';
+            document.getElementById('svc-name').value = s ? s.name : '';
+            document.getElementById('svc-unit').value = s ? s.unit : 'gab.';
+            document.getElementById('svc-price').value = s ? s.default_price : 0;
+            document.getElementById('svc-vat').value = s ? s.vat_rate : 21;
+            document.getElementById('service-modal').classList.remove('hidden');
+        }
+
+        function closeServiceModal() { document.getElementById('service-modal').classList.add('hidden'); }
+        function editService(id) { openServiceModal(services.find(s => s.id === id)); }
+
+        async function submitService(e) {
+            e.preventDefault();
+            const id = document.getElementById('svc-id').value;
+            const data = {
+                name: document.getElementById('svc-name').value,
+                unit: document.getElementById('svc-unit').value,
+                default_price: parseFloat(document.getElementById('svc-price').value) || 0,
+                vat_rate: parseFloat(document.getElementById('svc-vat').value),
+            };
+            if (id) {
+                await api('/api/services/' + id, { method: 'PUT', body: data });
+                toast('Pakalpojums atjaunināts');
+            } else {
+                await api('/api/services', { method: 'POST', body: data });
+                toast('Pakalpojums pievienots');
+            }
+            closeServiceModal();
+            loadServices();
+        }
+
+        async function deleteService(id) {
+            if (!confirm('Vai tiešām dzēst šo pakalpojumu?')) return;
+            await api('/api/services/' + id, { method: 'DELETE' });
+            toast('Pakalpojums dzēsts');
+            loadServices();
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  INVOICES
+        // ═══════════════════════════════════════════════════════════════
+
+
+        async function deleteInvoice(id) {
+            if (!confirm('Vai tiešām dzēst šo rēķinu?')) return;
+            await api('/api/invoices/' + id, { method: 'DELETE' });
+            toast('Rēķins dzēsts');
+            loadInvoices();
+        }
+
+        async function syncGDrive() {
+            try {
+                toast('Sinhronizācija sākta...', 5000);
+                const res = await api('/api/invoices/sync-gdrive', { method: 'POST' });
+                toast(`Sinhronizācija pabeigta! Augšupielādēti ${res.uploaded} rēķini.`);
+            } catch (e) {
+                toast('Kļūda sinhronizējot ar Drive: ' + e.message, 5000);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  INVOICE FORM
+        // ═══════════════════════════════════════════════════════════════
+        async function openInvoiceForm() {
+            // Load data
+            await Promise.all([loadClients(), loadServices(), loadSettingsData()]);
+            const sel = document.getElementById('inv-client');
+            sel.innerHTML = '<option value="">— Izvēlieties klientu —</option>' +
+                clients.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+
+            // Populate service picker
+            const picker = document.getElementById('service-picker');
+            picker.innerHTML = '<option value="">📦 Pievienot no kataloga...</option>' +
+                services.map(s => `<option value="${s.id}">${esc(s.name)} (${s.default_price.toFixed(2)} €)</option>`).join('');
+
+            // default dates
+            const today = new Date().toISOString().slice(0, 10);
+            const due = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+            document.getElementById('inv-date').value = today;
+            document.getElementById('inv-due').value = due;
+            document.getElementById('inv-issuer').value = '';
+            document.getElementById('inv-notes').value = '';
+            document.getElementById('line-items-tbody').innerHTML = '';
+            lineItemCounter = 0;
+            addLineItem();
+            document.getElementById('sec-invoices').classList.add('hidden');
+            document.getElementById('sec-invoice-form').classList.remove('hidden');
+            recalc();
+        }
+
+        async function editInvoice(id) {
+            const inv = await api('/api/invoices/' + id);
+            if (!inv) return;
+
+            await openInvoiceForm();
+
+            // Fill form
+            const clientSelect = document.getElementById('inv-client');
+            if (clientSelect.querySelector(`option[value="${inv.client_id}"]`)) {
+                clientSelect.value = inv.client_id;
+            }
+
+            document.getElementById('inv-date').value = inv.date;
+            document.getElementById('inv-due').value = inv.due_date;
+            document.getElementById('inv-issuer').value = inv.issuer_name || '';
+            document.getElementById('inv-notes').value = inv.notes || '';
+
+            // Clear existing empty item
+            document.getElementById('line-items-tbody').innerHTML = '';
+
+            // Add items
+            inv.items.forEach(item => {
+                addLineItem(item.description, item.unit, item.quantity, item.unit_price, item.vat_rate);
+            });
+
+            recalc();
+
+            // Should probably store ID to support update vs create, 
+            // but current backend POST /api/invoices always creates new.
+            // If we want "Edit", we need PUT /api/invoices/{id}.
+            // Current backend schemas show InvoiceUpdate exists, but let's check crud/main.
+            // For now, if we don't have PUT endpoint for invoices in JS, 
+            // the user might end up creating a duplicate. 
+            // Let's assume the user wants to Clone/Edit. 
+            // Wait, the user specifically asked for "Edit".
+            // I need to check if we support PUT /api/invoices/{id}.
+            // I see update_invoice in crud.py. 
+            // I will add a hidden field for Invoice ID.
+            document.getElementById('inv-id').value = inv.id;
+        }
+
+        function cancelInvoiceForm() {
+            document.getElementById('sec-invoice-form').classList.add('hidden');
+            // Reset ID
+            document.getElementById('inv-id').value = '';
+            // Navigate back to invoices tab properly
+            switchTab('invoices');
+        }
+
+        function addServiceItem() {
+            const picker = document.getElementById('service-picker');
+            const svcId = picker.value;
+            if (!svcId) return;
+            const svc = services.find(s => s.id == svcId);
+            if (!svc) return;
+            addLineItem(svc.name, svc.unit, 1, svc.default_price, svc.vat_rate);
+            picker.value = '';
+        }
+
+        let lineItemCounter = 0;
+        function addLineItem(desc = '', unit = 'gab.', qty = 1, price = 0, vatRate = null) {
+            const id = ++lineItemCounter;
+
+            // Check global settings if VAT is enabled
+            const globalVatEnabled = settingsData.vat_enabled !== 'false';
+            // Default to 21 if nothing provided and VAT enabled
+            const defaultVat = vatRate !== null ? vatRate : (globalVatEnabled ? 21 : 0);
+
+            const row = document.createElement('tr');
+            row.id = 'li-' + id;
+            row.className = 'border-b border-slate-600/30';
+            row.innerHTML = `
+        <td class="py-2 px-3"><input data-field="desc" value="${esc(desc)}" class="w-full bg-slate-600/50 border border-slate-600 rounded px-2 py-1.5 text-sm text-white" placeholder="Pakalpojuma apraksts"></td>
+        <td class="py-2 px-3"><input data-field="unit" value="${esc(unit)}" class="w-full bg-slate-600/50 border border-slate-600 rounded px-2 py-1.5 text-sm text-white text-center"></td>
+        <td class="py-2 px-3"><input data-field="qty" type="number" step="0.01" min="0" value="${qty}" oninput="recalc()" class="w-full bg-slate-600/50 border border-slate-600 rounded px-2 py-1.5 text-sm text-white text-right"></td>
+        <td class="py-2 px-3"><input data-field="price" type="number" step="0.01" min="0" value="${price}" oninput="recalc()" class="w-full bg-slate-600/50 border border-slate-600 rounded px-2 py-1.5 text-sm text-white text-right"></td>
+        <td class="py-2 px-3">
+            <select data-field="vat" onchange="recalc()" class="w-full bg-slate-600/50 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
+                <option value="21" ${defaultVat == 21 ? 'selected' : ''}>21%</option>
+                <option value="0" ${defaultVat == 0 ? 'selected' : ''}>0%</option>
+            </select>
+        </td>
+        <td class="py-2 px-3 text-right font-medium text-gray-300" data-field="linetotal">0.00</td>
+        <td class="py-2 px-3 text-center"><button type="button" onclick="removeLineItem(${id})" class="text-red-400 hover:text-red-300 transition">✕</button></td>
+    `;
+            document.getElementById('line-items-tbody').appendChild(row);
+            recalc();
+        }
+
+        function removeLineItem(id) {
+            const row = document.getElementById('li-' + id);
+            if (row) row.remove();
+            recalc();
+        }
+
+        function recalc() {
+            let subtotal = 0;
+            let vatTotal = 0;
+
+            document.querySelectorAll('#line-items-tbody tr').forEach(row => {
+                const qty = parseFloat(row.querySelector('[data-field="qty"]')?.value || 0);
+                const price = parseFloat(row.querySelector('[data-field="price"]')?.value || 0);
+                const vatRate = parseFloat(row.querySelector('[data-field="vat"]')?.value || 0);
+
+                const total = Math.round(qty * price * 100) / 100;
+                const vat = Math.round(total * vatRate) / 100;
+
+                row.querySelector('[data-field="linetotal"]').textContent = total.toFixed(2);
+                subtotal += total;
+                vatTotal += vat;
+            });
+
+            const grandTotal = subtotal + vatTotal;
+
+            document.getElementById('calc-subtotal').textContent = subtotal.toFixed(2);
+            document.getElementById('calc-vat').textContent = vatTotal.toFixed(2);
+            document.getElementById('calc-total-with-vat').textContent = grandTotal.toFixed(2);
+            document.getElementById('calc-total').textContent = grandTotal.toFixed(2);
+        }
+
+        async function submitInvoice(e) {
+            e.preventDefault();
+            const items = [];
+            document.querySelectorAll('#line-items-tbody tr').forEach(row => {
+                const desc = row.querySelector('[data-field="desc"]').value.trim();
+                if (!desc) return;
+                items.push({
+                    description: desc,
+                    unit: row.querySelector('[data-field="unit"]').value || 'gab.',
+                    quantity: parseFloat(row.querySelector('[data-field="qty"]').value) || 1,
+                    unit_price: parseFloat(row.querySelector('[data-field="price"]').value) || 0,
+                    vat_rate: parseFloat(row.querySelector('[data-field="vat"]').value) || 0,
+                });
+            });
+            if (!items.length) { alert('Pievienojiet vismaz vienu pozīciju'); return; }
+            const data = {
+                client_id: parseInt(document.getElementById('inv-client').value),
+                date: document.getElementById('inv-date').value,
+                due_date: document.getElementById('inv-due').value,
+                issuer_name: document.getElementById('inv-issuer').value,
+                notes: document.getElementById('inv-notes').value,
+                items,
+            };
+            const id = document.getElementById('inv-id').value;
+            let inv;
+            if (id) {
+                inv = await api('/api/invoices/' + id, { method: 'PUT', body: data });
+                toast(`Rēķins ${inv.invoice_number} atjaunināts!`);
+            } else {
+                inv = await api('/api/invoices', { method: 'POST', body: data });
+                toast(`Rēķins ${inv.invoice_number} izveidots!`);
+            }
+            cancelInvoiceForm();
+            loadInvoices();
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  SETTINGS
+        // ═══════════════════════════════════════════════════════════════
+        async function loadSettingsData() {
+            settingsData = await api('/api/settings');
+            return settingsData;
+        }
+
+        async function loadSettings() {
+            const s = await loadSettingsData();
+            for (const key of Object.keys(s)) {
+                const el = document.getElementById('s-' + key);
+                if (el) el.value = s[key] || '';
+            }
+            // Update logo preview
+            if (s.logo_base64) {
+                showLogo(s.logo_base64);
+            } else {
+                hideLogo();
+            }
+            updateGDriveStatus(s);
+
+            // Load current username for profile dropdown
+            const user = await api('/api/auth/me');
+            if (user && user.username) {
+                const uEl = document.getElementById('profile-username');
+                if (uEl) uEl.textContent = user.username;
+                const dashUser = document.getElementById('dash-user');
+                if (dashUser) dashUser.textContent = user.username;
+            }
+        }
+
+        function previewLogo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const base64 = e.target.result;
+                document.getElementById('s-logo_base64').value = base64;
+                showLogo(base64);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showLogo(base64) {
+            const img = document.getElementById('logo-img');
+            img.src = base64;
+            img.classList.remove('hidden');
+            document.getElementById('logo-placeholder').classList.add('hidden');
+            document.getElementById('btn-remove-logo').classList.remove('hidden');
+        }
+
+        function hideLogo() {
+            document.getElementById('logo-img').classList.add('hidden');
+            document.getElementById('logo-placeholder').classList.remove('hidden');
+            document.getElementById('btn-remove-logo').classList.add('hidden');
+            document.getElementById('s-logo_base64').value = '';
+        }
+
+        function removeLogo() {
+            hideLogo();
+            document.getElementById('logo-upload').value = '';
+        }
+
+        // ── Settings Sub-tabs ─────────────────────────────
+        function switchSettingsTab(tab) {
+            ['company', 'email', 'gdrive', 'eds'].forEach(t => {
+                const el = document.getElementById('stab-' + t);
+                if (el) el.classList.toggle('hidden', t !== tab);
+                const btn = document.getElementById('stab-btn-' + t);
+                if (btn) btn.classList.toggle('stab-active', t === tab);
+            });
+            loadSettings();
+        }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+            await saveSettingsInternal();
+        }
+
+        async function saveSettingsInternal() {
+            const keys = ['company_name', 'reg_number', 'vat_number', 'vat_enabled', 'legal_address', 'phone', 'email',
+                'bank1_name', 'bank1_swift', 'bank1_account', 'bank2_name', 'bank2_swift', 'bank2_account',
+                'gdrive_enabled', 'gdrive_folder_id', 'gdrive_client_id', 'gdrive_client_secret', 'logo_base64', 'invoice_prefix',
+                'smtp_server', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_tls',
+                'eds_enabled', 'eds_api_key'];
+            const data = {};
+            keys.forEach(k => { const el = document.getElementById('s-' + k); if (el) data[k] = el.value; });
+            await api('/api/settings', { method: 'PUT', body: data });
+            settingsData = data;
+            return data;
+        }
+
+        async function saveCompanySettings(e) {
+            e.preventDefault();
+            const keys = ['company_name', 'reg_number', 'vat_number', 'vat_enabled', 'legal_address', 'phone', 'email',
+                'bank1_name', 'bank1_swift', 'bank1_account', 'bank2_name', 'bank2_swift', 'bank2_account',
+                'logo_base64', 'invoice_prefix'];
+            const data = {};
+            keys.forEach(k => { const el = document.getElementById('s-' + k); if (el) data[k] = el.value; });
+            await api('/api/settings', { method: 'PUT', body: data });
+            settingsData = { ...settingsData, ...data };
+            const badge = document.getElementById('settings-saved');
+            badge.classList.remove('hidden');
+            setTimeout(() => badge.classList.add('hidden'), 2000);
+            toast('Uznemuma iestatijumi saglabaati!');
+        }
+
+        async function saveEmailSettings(e) {
+            e.preventDefault();
+            const keys = ['smtp_server', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_tls'];
+            const data = {};
+            keys.forEach(k => { const el = document.getElementById('s-' + k); if (el) data[k] = el.value; });
+            await api('/api/settings', { method: 'PUT', body: data });
+            settingsData = { ...settingsData, ...data };
+            const badge = document.getElementById('email-settings-saved');
+            badge.classList.remove('hidden');
+            setTimeout(() => badge.classList.add('hidden'), 2000);
+        }
+
+        async function saveGdriveSettings(e) {
+            e.preventDefault();
+            const keys = ['gdrive_enabled', 'gdrive_folder_id', 'gdrive_client_id', 'gdrive_client_secret'];
+            const data = {};
+            keys.forEach(k => { const el = document.getElementById('s-' + k); if (el) data[k] = el.value; });
+            await api('/api/settings', { method: 'PUT', body: data });
+            settingsData = { ...settingsData, ...data };
+            const badge = document.getElementById('gdrive-settings-saved');
+            badge.classList.remove('hidden');
+            setTimeout(() => badge.classList.add('hidden'), 2000);
+            updateGDriveStatus(settingsData);
+        }
+
+        async function saveEdsSettings(e) {
+            e.preventDefault();
+            const keys = ['eds_enabled', 'eds_api_key'];
+            const data = {};
+            keys.forEach(k => { const el = document.getElementById('s-' + k); if (el) data[k] = el.value; });
+            await api('/api/settings', { method: 'PUT', body: data });
+            settingsData = { ...settingsData, ...data };
+            const badge = document.getElementById('eds-settings-saved');
+            badge.classList.remove('hidden');
+            setTimeout(() => badge.classList.add('hidden'), 2000);
+        }
+
+        async function testSmtp() {
+            const statusEl = document.getElementById('smtp-test-status');
+            statusEl.classList.remove('hidden');
+            statusEl.className = 'text-xs text-blue-400';
+            statusEl.textContent = 'Suta testa e-pastu...';
+            try {
+                await saveEmailSettings({ preventDefault: () => { } });
+                const fromEmail = document.getElementById('s-smtp_from_email').value || document.getElementById('s-smtp_username').value;
+                await api('/api/settings/test-email', { method: 'POST', body: { to_email: fromEmail } });
+                statusEl.className = 'text-xs text-emerald-400';
+                statusEl.textContent = 'Testa e-pasts nosutits uz ' + fromEmail;
+            } catch (err) {
+                statusEl.className = 'text-xs text-red-400';
+                statusEl.textContent = 'Kluda: ' + (err.message || 'Neizdewas nosutit');
+            }
+        }
+
+        async function connectGoogle() {
+            await saveGdriveSettings({ preventDefault: () => { } });
+            window.location.href = "/api/gdrive/auth";
+        }
+
+        // ── Profile Dropdown ──────────────────────────────────────────────
+        function toggleProfileMenu() {
+            const dd = document.getElementById('profile-dropdown');
+            dd.classList.toggle('hidden');
+            if (!dd.classList.contains('hidden')) {
+                const currentUser = document.getElementById('profile-username').textContent;
+                document.getElementById('profile-new-username').value = currentUser;
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            const container = document.getElementById('profile-menu-container');
+            const dd = document.getElementById('profile-dropdown');
+            if (container && dd && !container.contains(e.target)) {
+                dd.classList.add('hidden');
+            }
+        });
+
+        async function updateProfile(e) {
+            e.preventDefault();
+            const newUsername = document.getElementById('profile-new-username').value.trim();
+            const newPw = document.getElementById('profile-new-password').value;
+            const confirmPw = document.getElementById('profile-confirm-password').value;
+            const statusEl = document.getElementById('profile-pw-status');
+
+            statusEl.classList.remove('hidden');
+            if (!newUsername) {
+                statusEl.textContent = 'Ievadiet lietotājvārdu.';
+                statusEl.className = 'text-xs text-red-400';
+                return;
+            }
+            if (newPw && newPw !== confirmPw) {
+                statusEl.textContent = 'Paroles nesakrīt!';
+                statusEl.className = 'text-xs text-red-400';
+                return;
+            }
+            try {
+                const body = { username: newUsername };
+                if (newPw) body.password = newPw;
+                await api('/api/auth/profile', { method: 'PUT', body });
+                statusEl.textContent = '✓ Profils atjaunināts! Pieslēdzieties no jauna.';
+                statusEl.className = 'text-xs text-emerald-400';
+                document.getElementById('profile-new-password').value = '';
+                document.getElementById('profile-confirm-password').value = '';
+                setTimeout(() => logout(), 2000);
+            } catch (err) {
+                statusEl.textContent = '✗ Kļūda: ' + (err.message || 'Neizdevās saglabāt');
+                statusEl.className = 'text-xs text-red-400';
+            }
+        }
+
+        function updateGDriveStatus(data) {
+            const el = document.getElementById('gdrive-status');
+            if (data.gdrive_refresh_token) {
+                el.innerText = '✅ Pieslēgts';
+                el.className = 'text-sm font-semibold text-emerald-400';
+            } else {
+                el.innerText = '❌ Nav pieslēgts';
+                el.className = 'text-sm font-semibold text-gray-500';
+            }
+
+            // Check visibility of "Sync All" button
+            // If we want to hide it when not connected, we could do it here.
+        }
+
+        function checkURLParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const gdrive = urlParams.get('gdrive');
+            if (gdrive === 'ok') {
+                toast('✅ Veiksmīgi pieslēgts Google Drive!');
+                // Clean URL
+                window.history.replaceState({}, document.title, "/");
+                // Open settings tab to show status
+                switchTab('settings');
+            } else if (gdrive === 'fail') {
+                toast('❌ Kļūda pieslēdzoties Google Drive', 5000);
+                window.history.replaceState({}, document.title, "/");
+                switchTab('settings');
+            }
+        }
+
+        // Call on load
+        checkURLParams();
+
+        // ═══════════════════════════════════════════════════════════════
+        //  HELPERS
+        // ═══════════════════════════════════════════════════════════════
+        function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  INIT
+        // ═══════════════════════════════════════════════════════════════
+        loadSettingsData().then(() => {
+            lucide.createIcons();
+            // Init routing
+            // Init routing based on query params
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('tab') === 'invoices') {
+                switchTab('invoices');
+                // Clean URL but keep path
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                loadInvoices();
+            }
+        });
+    </script>
+
+</body>
+
+</html>
