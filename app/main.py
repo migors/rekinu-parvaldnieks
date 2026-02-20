@@ -28,6 +28,28 @@ app = FastAPI(title="Invoice Manager", version="1.0.0")
 def startup_event():
     from .database import SessionLocal
     from . import models, auth
+    from sqlalchemy import text
+    
+    # Auto-migrate DB schema for existing databases (SQLite doesn't do this via create_all)
+    try:
+        with engine.begin() as conn:
+            # Check clients table
+            res = conn.execute(text("PRAGMA table_info(clients)")).fetchall()
+            columns = [row[1] for row in res]
+            if "postal_code" not in columns and len(columns) > 0:
+                conn.execute(text('ALTER TABLE clients ADD COLUMN postal_code VARCHAR(20) DEFAULT ""'))
+            if "email" not in columns and len(columns) > 0:
+                conn.execute(text('ALTER TABLE clients ADD COLUMN email VARCHAR(255) DEFAULT ""'))
+                
+            # Check services table
+            res = conn.execute(text("PRAGMA table_info(services)")).fetchall()
+            columns = [row[1] for row in res]
+            if "vat_rate" not in columns and len(columns) > 0:
+                conn.execute(text('ALTER TABLE services ADD COLUMN vat_rate FLOAT DEFAULT 21.0'))
+        print("Database schemas verified and migrated.")
+    except Exception as e:
+        print(f"Error migrating DB schema: {e}")
+
     db = SessionLocal()
     try:
         # Check if any user exists
