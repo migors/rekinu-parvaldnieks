@@ -24,30 +24,34 @@ Moderna un viegli lietojama rēķinu sagatavošanas un pārvaldības sistēma, k
 ![Iestatījumi](docs/images/settings.png)
 *Uzņēmuma rekvizītu, bankas un EDS konfigurācijas iestatījumi.*
 
-## 🛠️ Tehnoloģijas
+## 🛠️ Sistēmas Uzkūves Tehnoloģijas (Tehniskā pieeja)
 
-- **Backend:** Python (FastAPI, SQLAlchemy)
+- **Backend:** Python (FastAPI, SQLAlchemy) lokālam serverim
 - **Frontend:** HTML5, Vanilla JavaScript, Tailwind CSS (moderns un ātrs UI)
-- **Datubāze:** SQLite (glabājas lokāli `data/` mapē)
+- **Datubāze:** SQLite (automātiska instalācijas versiju datubāzu formātu migrācija).
+- **Logu pārvaldnieks (Native Window):** Microsoft Edge App Mode (`msedge.exe --app`). Agrāk izmantojām `pywebview`, taču tas izrādījās nestabils un neatbalstīts jaunākajā Python versijā (3.14). Izmantojot natīvo Windows pārlūku App režīmā, iegūstam tūlītēju, stabilu ielādi, pilnīgu CSS atbalstu un programmu bez "pārlūka paneļiem", kas uzvedas kā klasiska Desktop aplikācija ar logu sistēmas teknē (System Tray).
 
 ## 🚀 Uzstādīšana un lietošana
 
-### 📥 Instalācijas fails (Windows lietotājiem)
-Tagad programma ir pieejama kā klasiska, autonoma Windows aplikācija ar savu logu un instalatoru.
+Nekas vairs nav jāatspiež (bez .zip), viss notiek pilnībā automātiski, kā ar jebkuru instalējamu programmu!
 
-1. Lejuplādējiet instalācijas failu:
+### 📥 Vienkāršā instalācija (Windows lietotājiem)
+
+Mēs esam pilnveidojuši aplikāciju, un tagad tā ir pieejama kā klasiska, gatava instalācijas pakotne ar savu logu un saskarni.
+
+1. Lejuplādējiet vienu vienīgu instalācijas failu:
 👉 **[Lejuplādēt NC_Invoice_Manager_Setup.exe](https://github.com/migors/rekinu-parvaldnieks/raw/main/dist/NC_Invoice_Manager_Setup.exe)**
-2. Palaidiet lejuplādēto failu un sekojiet instalācijas soļiem.
-3. Programma izveidos ikonu uz Jūsu darbvirsmas (Desktop) un būs atrodama "Start" izvēlnē.
+2. Palaidiet lejuplādēto failu. Ja Windows SmartScreen brīdina par nezināmu izstrādātāju, spiediet "More info" un tad "Run anyway", pēc tam sekojiet instalācijas soļiem klikšķinot "Tālāk".
+3. Uzstādītājs radīs ikonu uz Jūsu darbvirsmas (Desktop) un arī Start izvēlnē. Kad palaidisiet, atvērsies programmas logs. Viss strādā!
 
-*(Piezīme: Tā kā kods ir jauns un nav parakstīts ar dārgu korporatīvo sertifikātu, Windows SmartScreen var parādīt brīdinājumu. Spiediet "More info" un "Run anyway".)*
+Piezīme: Ja pārinstalējat aplikāciju (lai saņemtu atjauninājumu), jums nav jāsatraucas par vecajiem datiem - klientu `invoice.db` saglabājas `%APPDATA%` mapē, un paliks neskarts.
 
 ---
 
-### Priekšnoteikumi (Izstrādātājiem)
+### Priekšnoteikumi izstrādātājiem (Koda vides palaišana)
 - Python 3.10 vai jaunāks
 
-### Uzstādīšanas soļi
+### Koda uzstādīšanas soļi
 1. Klonējiet repozitoriju:
    ```bash
    git clone https://github.com/migors/rekinu-parvaldnieks.git
@@ -63,21 +67,24 @@ Tagad programma ir pieejama kā klasiska, autonoma Windows aplikācija ar savu l
    ```
 4. Atveriet pārlūkprogrammu: `http://127.0.0.1:8000`
 
-**Noklusējuma pieejas dati:**
+**Noklusējuma koda vides pieejas dati:**
 - Lietotājvārds: `admin`
 - Parole: `admin123`
 *(Paroli var nomainīt Profila iestatījumos)*
 
-## 📦 EXE faila izveide (Windows)
+## 📦 EXE instalācijas faila izveide
 
-Ja vēlaties izmantot lietotni kā patstāvīgu programmu (`.exe`), izmantojiet pievienoto skriptu:
+Ja jūs kā izstrādātājs gribat pielāgot kodu un izveidot jaunu `Setup.exe` savām vajadzībām:
+1. Palaidiet skriptu, kas saģenerēs pašu pamatprogrammu:
 ```bash
 python build_exe.py
 ```
-Gatavais fails parādīsies `dist/` mapē.
+2. Instalējiet *Inno Setup 6* programmu.
+3. Nokompilējiet gala instalācijas paku, programmai uzrādot repozitorija mapē esošo `setup.iss` failu.
+Viss parādīsies `dist/` mapītē gatavai instalēšanai.
 
 ## 🔒 Drošība un dati
-Visi dati (klienti, rēķini, iestatījumi) glabājas tikai Jūsu ierīcē `data/invoice.db` failā. Projekts ir veidots, prioritizējot datu privātumu un lokālu apstrādi.
+Visi dati (klienti, rēķini, iestatījumi) fiziski nepamet Jūsu datoru, bet gan glabājas tikai konkrētajā iekārtā SQLite datubāzes failā `InvoiceManager\data\invoices.db`! Aplikācijai nav piekļuves ārējiem hostingiem (atskaitot Google Drive / SMTP e-pastu saskarnēm, ko konfigurējat Jūs pašu rokām).
 
 ---
 *Izstrādāts ar Antigravity AI palīdzību.*
