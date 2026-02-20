@@ -21,7 +21,15 @@ Moderna un viegli lietojama rēķinu sagatavošanas un pārvaldības sistēma, k
 
 ## 🚀 Uzstādīšana un lietošana
 
-### Priekšnoteikumi
+### 📥 Tiešā lejuplāde (Windows lietotājiem)
+Ja nevēlaties izmantot komandrindu, varat lejuplādēt gatavu programmu šeit:
+👉 **[Lejuplādēt NC_Invoice_Manager_v1.2.zip](https://github.com/migors/rekinu-parvaldnieks/raw/main/NC_Invoice_Manager_v1.2.zip)**
+
+*Instrukcija: Izpakojiet ZIP failu un palaidiet `InvoiceManager.exe`.*
+
+---
+
+### Priekšnoteikumi (Izstrādātājiem)
 - Python 3.10 vai jaunāks
 
 ### Uzstādīšanas soļi
