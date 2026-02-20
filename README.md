@@ -2,6 +2,8 @@
 
 Moderna un viegli lietojama rēķinu sagatavošanas un pārvaldības sistēma, kas pielāgota Latvijas tirgum.
 
+🔗 **Vairāk informācijas un plašāks apraksts pieejams šeit:** [SEO's - Rēķinu pārvaldības rīks](https://seos.lv/noderigi/rekinu-parvaldibas-riks)
+
 ## ✨ Galvenās funkcijas
 
 - **Rēķinu ģenerēšana:** Automātiska PDF rēķinu izveide ar profesionālu dizainu.
