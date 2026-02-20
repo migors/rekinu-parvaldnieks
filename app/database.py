@@ -6,14 +6,13 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 def _get_data_dir() -> str:
     """Return the data directory. When running as a frozen EXE, store data in
-    %APPDATA%/InvoiceManager/data/ so it persists across updates."""
+    %APPDATA%/InvoiceManager/data/ so it persists across updates and works from Program Files."""
     if getattr(sys, 'frozen', False):
-        # Running as PyInstaller EXE
+        # Running as PyInstaller EXE (installed via Setup)
         appdata = os.environ.get('APPDATA', os.path.expanduser('~'))
         return os.path.join(appdata, 'InvoiceManager', 'data')
     else:
         # Development mode — use project-level data/ folder
-        # Force absolute path resolution
         base_dir = os.path.dirname(os.path.abspath(__file__)) # app/
         root_dir = os.path.dirname(base_dir) # project root
         return os.path.join(root_dir, "data")

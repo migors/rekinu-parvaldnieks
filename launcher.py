@@ -31,7 +31,11 @@ def _acquire_mutex() -> bool:
 
 
 # ── Logging setup ────────────────────────────────────────────────────
-log_dir = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'InvoiceManager')
+if getattr(sys, 'frozen', False):
+    log_dir = os.path.join(os.path.dirname(sys.executable), 'data')
+else:
+    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+
 os.makedirs(log_dir, exist_ok=True)
 logging.basicConfig(
     filename=os.path.join(log_dir, 'app.log'),
@@ -237,14 +241,38 @@ def main():
     server_thread = threading.Thread(target=run_server, daemon=True)
     server_thread.start()
 
-    # Wait for the server to be ready, then open browser
+    # Wait for the server to be ready, then open pywebview
     print("  [3/3] Gaida servera gatavību...")
     if wait_for_server(port):
-        print(f"\n  ✓ Serveris gatavs! Atver pārlūku...")
-        print(f"  ✓ Adrese: http://localhost:{port}")
-        print(f"\n  Programma darbosies fonā (system tray ikonā).")
-        logger.info("Server is ready — opening browser")
-        webbrowser.open(f"http://localhost:{port}")
+        print(f"\n  ✓ Serveris gatavs! Atver programmas telti...")
+        print(f"  ✓ Iekšējā adrese: http://localhost:{port}")
+        logger.info("Server is ready — opening pywebview")
+        
+        try:
+            import webview
+            
+            # Create native window
+            window = webview.create_window(
+                'NC Invoice Manager', 
+                f'http://localhost:{port}',
+                width=1200,
+                height=800,
+                min_size=(800, 600)
+            )
+            
+            # Start the webview GUI loop
+            # This blocks until the window is closed
+            webview.start(private_mode=False)  # private_mode=False enables caching/localstorage
+            
+            # When the window closes, set the shutdown event to kill the tray/server
+            shutdown_event.set()
+        except ImportError:
+            # Fallback to standard browser if pywebview fails to load
+            import webbrowser
+            logger.warning("pywebview not available, falling back to webbrowser")
+            webbrowser.open(f"http://localhost:{port}")
+            run_tray(port, shutdown_event)
+            
     elif server_error.is_set():
         print("\n  [!] Serveris nevarēja startēt. Skatiet logu:")
         print(f"      {os.path.join(log_dir, 'app.log')}")
@@ -256,9 +284,6 @@ def main():
         logger.error("Server did not start in time")
         input("\n  Nospiediet Enter lai aizvērtu...")
         return
-
-    # Run system tray (blocks until user quits)
-    run_tray(port, shutdown_event)
 
     # Graceful shutdown
     print("\n  Izslēdz serveri...")

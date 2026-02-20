@@ -96,6 +96,10 @@ def build():
         # Collect data for packages that need data files
         '--collect-data=reportlab',
         '--collect-data=certifi',
+        '--collect-data=webview',
+
+        # Add custom icon
+        f'--icon={os.path.join(project_dir, "app_icon.ico")}',
 
         # Output directory
         f'--distpath={os.path.join(project_dir, "dist")}',
