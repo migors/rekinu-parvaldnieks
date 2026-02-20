@@ -13,6 +13,17 @@ Moderna un viegli lietojama rēķinu sagatavošanas un pārvaldības sistēma, k
 - **Pakalpojumu katalogs:** Saglabājiet biežāk izmantotos pakalpojumus un preces ātrai rēķinu aizpildīšanai.
 - **Statistika:** Vizualizēts apgrozījuma pārskats pēdējiem mēnešiem.
 
+## 📸 Sistēmas skati
+
+![Panelis](docs/images/dashboard.png)
+*Galvenais panelis ar apgrozījuma statistiku un ātrajām norādēm.*
+
+![Rēķini](docs/images/invoices.png)
+*Rēķinu un klientu pārvaldības saraksts.*
+
+![Iestatījumi](docs/images/settings.png)
+*Uzņēmuma rekvizītu, bankas un EDS konfigurācijas iestatījumi.*
+
 ## 🛠️ Tehnoloģijas
 
 - **Backend:** Python (FastAPI, SQLAlchemy)
