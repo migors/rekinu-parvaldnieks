@@ -1322,7 +1322,7 @@
                 <button onclick="closeClientModal()"
                     class="text-gray-400 hover:text-white text-xl transition">&times;</button>
             </div>
-            <Form id="client-form" onsubmit="submitClient(event)" class="p-6 space-y-4">
+            <form id="client-form" onsubmit="submitClient(event)" class="p-6 space-y-4">
                 <input type="hidden" id="c-id">
                 <div class="relative">
                     <label class="block text-xs text-gray-400 mb-1">Nosaukums *</label>
@@ -1387,7 +1387,7 @@
                         Saglabāt
                     </button>
                 </div>
-            </Form>
+            </form>
         </div>
     </div>
 
@@ -2016,8 +2016,13 @@
         //  INVOICE FORM
         // ═══════════════════════════════════════════════════════════════
         async function openInvoiceForm() {
-            // Load data
-            await Promise.all([loadClients(), loadServices(), loadSettingsData()]);
+            try {
+                // Load data — if any call fails, we still show the form
+                await Promise.allSettled([loadClients(), loadServices(), loadSettingsData()]);
+            } catch (e) {
+                console.warn('openInvoiceForm preload error:', e);
+            }
+
             const sel = document.getElementById('inv-client');
             sel.innerHTML = '<option value="">— Izvēlieties klientu —</option>' +
                 clients.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');

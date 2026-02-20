@@ -119,19 +119,33 @@ def generate_invoice_number(db: Session) -> str:
 
 # ── Font Registration (Global) ────────────────────────────────────────
 
-def _find_font(names: list[str]) -> str | None:
-    """Search for a font file in common Windows locations."""
+def _find_font(names: list) -> str:
+    """Search for a font file in common Windows locations, including PyInstaller bundle."""
     search_dirs = [
+        # PyInstaller bundle directory (_MEIPASS is set when running as frozen EXE)
+        getattr(sys, '_MEIPASS', ''),
+        os.path.join(getattr(sys, '_MEIPASS', ''), 'fonts'),
+        # Windows system fonts
         os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts'),
         os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Microsoft', 'Windows', 'Fonts'),
+        # Next to the EXE or script
+        os.path.dirname(os.path.abspath(__file__)),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'fonts'),
     ]
     for d in search_dirs:
+        if not d:
+            continue
         for name in names:
             path = os.path.join(d, name)
             if os.path.isfile(path):
                 return path
     return None
 
+
+# Font names that will be used throughout PDF generation
+# If Arial is not found, we fall back to built-in Helvetica (always available in ReportLab)
+_FONT_NORMAL = 'Helvetica'
+_FONT_BOLD = 'Helvetica-Bold'
 
 try:
     from reportlab.pdfbase import pdfmetrics
@@ -142,12 +156,14 @@ try:
 
     if arial_path:
         pdfmetrics.registerFont(TTFont('CustomArial', arial_path))
+        _FONT_NORMAL = 'CustomArial'
     if arial_bold_path:
         pdfmetrics.registerFont(TTFont('CustomArialBold', arial_bold_path))
+        _FONT_BOLD = 'CustomArialBold'
 
-    print(f"Fonts registered: Arial={'OK' if arial_path else 'MISSING'}, ArialBold={'OK' if arial_bold_path else 'MISSING'}")
+    print(f"Fonts registered: Arial={'OK ('+arial_path+')' if arial_path else 'MISSING → using Helvetica'}, ArialBold={'OK' if arial_bold_path else 'MISSING → using Helvetica-Bold'}")
 except Exception as e:
-    print(f"Warning: Could not register fonts: {e}")
+    print(f"Warning: Could not register fonts: {e} — falling back to Helvetica")
 
 
 

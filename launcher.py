@@ -30,19 +30,9 @@ def _acquire_mutex() -> bool:
     return True
 
 
-# ── Logging setup ────────────────────────────────────────────────────
-if getattr(sys, 'frozen', False):
-    log_dir = os.path.join(os.path.dirname(sys.executable), 'data')
-else:
-    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-
-os.makedirs(log_dir, exist_ok=True)
-logging.basicConfig(
-    filename=os.path.join(log_dir, 'app.log'),
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(message)s',
-)
+# ── Logging is set up inside main() to avoid running in PyWebView child processes ──
 logger = logging.getLogger(__name__)
+log_dir = ''  # Will be set in main()
 
 # ── Console helpers ──────────────────────────────────────────────────
 
@@ -57,6 +47,12 @@ def _show_console():
         ctypes.windll.kernel32.SetConsoleTitleW("Invoice Manager")
     except Exception:
         pass
+
+# Ensure stdout and stderr are never None (prevents PyInstaller child process crashes)
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, 'w')
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, 'w')
 
 
 def _hide_console():
@@ -181,6 +177,42 @@ def run_tray(port: int, shutdown_event: threading.Event):
 
 # ── Main entry point ─────────────────────────────────────────────────
 
+
+def _open_app_window(url: str):
+    """Open the app in a dedicated window using Edge/Chrome --app mode.
+    This gives a native-looking window without needing pywebview or pythonnet.
+    Falls back to default browser if no Chromium browser is found.
+    Returns the Popen object if app mode succeeded, else None.
+    """
+    candidate_paths = [
+        # Microsoft Edge (ships with every Windows 10+)
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        # Google Chrome
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    ]
+    app_args = [
+        f"--app={url}",
+        "--new-window",
+        "--window-size=1280,800",
+        "--disable-extensions",
+    ]
+    for path in candidate_paths:
+        if os.path.isfile(path):
+            try:
+                proc = subprocess.Popen([path] + app_args)
+                logger.info(f"Opened app window using: {path}")
+                return proc
+            except Exception as e:
+                logger.warning(f"Failed to launch {path}: {e}")
+
+    # Fallback: open in default browser (no blocking process returned)
+    logger.warning("No Chromium browser found — falling back to default browser")
+    webbrowser.open(url)
+    return None
+
+
 def main():
     # Show console for startup feedback
     _show_console()
@@ -190,16 +222,6 @@ def main():
     print("  ║       INVOICE MANAGER v1.0           ║")
     print("  ╚══════════════════════════════════════╝")
     print()
-
-    # Prevent multiple instances
-    if not _acquire_mutex():
-        print("  [!] Invoice Manager jau darbojas!")
-        print("  Meklējiet ikonu sistēmas paziņojumu joslā (tray).")
-        print()
-        # Try to open browser to existing instance
-        webbrowser.open("http://localhost:8001")
-        time.sleep(3)
-        return
 
     port = find_free_port(8001)
     print(f"  [1/3] Startē serveri uz porta {port}...")
@@ -241,38 +263,19 @@ def main():
     server_thread = threading.Thread(target=run_server, daemon=True)
     server_thread.start()
 
-    # Wait for the server to be ready, then open pywebview
-    print("  [3/3] Gaida servera gatavību...")
+    # Wait for the server to be ready, then open an app window
+    print("  [3/3] Gaida servera gatāvību...")
     if wait_for_server(port):
-        print(f"\n  ✓ Serveris gatavs! Atver programmas telti...")
+        print(f"\n  ✓ Serveris gatavs!")
         print(f"  ✓ Iekšējā adrese: http://localhost:{port}")
-        logger.info("Server is ready — opening pywebview")
-        
-        try:
-            import webview
-            
-            # Create native window
-            window = webview.create_window(
-                'NC Invoice Manager', 
-                f'http://localhost:{port}',
-                width=1200,
-                height=800,
-                min_size=(800, 600)
-            )
-            
-            # Start the webview GUI loop
-            # This blocks until the window is closed
-            webview.start(private_mode=False)  # private_mode=False enables caching/localstorage
-            
-            # When the window closes, set the shutdown event to kill the tray/server
-            shutdown_event.set()
-        except ImportError:
-            # Fallback to standard browser if pywebview fails to load
-            import webbrowser
-            logger.warning("pywebview not available, falling back to webbrowser")
-            webbrowser.open(f"http://localhost:{port}")
-            run_tray(port, shutdown_event)
-            
+        logger.info("Server is ready — opening app window")
+
+        url = f"http://localhost:{port}"
+        _open_app_window(url)
+
+        # Always run the system tray so the user can quit the server cleanly.
+        # The server stays alive until the user chooses "Aizvērt" from the tray.
+        run_tray(port, shutdown_event)
     elif server_error.is_set():
         print("\n  [!] Serveris nevarēja startēt. Skatiet logu:")
         print(f"      {os.path.join(log_dir, 'app.log')}")
@@ -296,5 +299,28 @@ def main():
     logger.info("Goodbye!")
 
 
+import multiprocessing
+
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
+
+    # ── Logging setup (only in the main process, not PyWebView subprocesses) ──
+    if getattr(sys, 'frozen', False):
+        log_dir = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'InvoiceManager', 'data')
+    else:
+        log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    os.makedirs(log_dir, exist_ok=True)
+    logging.basicConfig(
+        filename=os.path.join(log_dir, 'app.log'),
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(message)s',
+    )
+
+    # ── Mutex check (only in the main process) ──
+    if not _acquire_mutex():
+        print('  [!] Invoice Manager jau darbojas!')
+        import webbrowser
+        webbrowser.open('http://localhost:8001')
+        sys.exit(0)
+
     main()
