@@ -14,6 +14,8 @@ ArchitecturesInstallIn64BitMode=x64
 PrivilegesRequired=admin
 DisableWelcomePage=no
 DisableDirPage=no
+CloseApplications=force
+RestartApplications=no
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked

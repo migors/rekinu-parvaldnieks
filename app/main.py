@@ -192,4 +192,11 @@ def login_page():
 
 @app.get("/")
 def root():
-    return FileResponse(os.path.join(_static_dir, "index.html"))
+    return FileResponse(
+        os.path.join(_static_dir, "index.html"),
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )

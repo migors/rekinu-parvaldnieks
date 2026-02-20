@@ -1746,27 +1746,32 @@
 
         async function submitClient(e) {
             e.preventDefault();
-            const id = document.getElementById('c-id').value;
-            const data = {
-                name: document.getElementById('c-name').value,
-                reg_number: document.getElementById('c-reg').value,
-                vat_number: document.getElementById('c-vat').value,
-                legal_address: document.getElementById('c-address').value,
-                postal_code: document.getElementById('c-postal-code').value,
-                bank_name: document.getElementById('c-bank').value,
-                bank_swift: document.getElementById('c-swift').value,
-                bank_account: document.getElementById('c-account').value,
-                email: document.getElementById('c-email').value,
-            };
-            if (id) {
-                await api('/api/clients/' + id, { method: 'PUT', body: data });
-                toast('Klients atjaunināts');
-            } else {
-                await api('/api/clients', { method: 'POST', body: data });
-                toast('Klients pievienots');
+            try {
+                const id = document.getElementById('c-id').value;
+                const data = {
+                    name: document.getElementById('c-name').value,
+                    reg_number: document.getElementById('c-reg').value,
+                    vat_number: document.getElementById('c-vat').value,
+                    legal_address: document.getElementById('c-address').value,
+                    postal_code: document.getElementById('c-postal-code').value,
+                    bank_name: document.getElementById('c-bank').value,
+                    bank_swift: document.getElementById('c-swift').value,
+                    bank_account: document.getElementById('c-account').value,
+                    email: document.getElementById('c-email').value,
+                };
+                if (id) {
+                    await api('/api/clients/' + id, { method: 'PUT', body: data });
+                    toast('Klients atjaunināts');
+                } else {
+                    await api('/api/clients', { method: 'POST', body: data });
+                    toast('Klients pievienots');
+                }
+                closeClientModal();
+                loadClients();
+            } catch (err) {
+                console.error(err);
+                alert("Kļūda saglabājot klientu: " + err.message);
             }
-            closeClientModal();
-            loadClients();
         }
 
         async function deleteClient(id) {
