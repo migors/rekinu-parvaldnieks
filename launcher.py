@@ -141,7 +141,7 @@ def run_tray(port: int, shutdown_event: threading.Event):
         draw.text((16, 18), 'IM', fill='white')
 
         def on_open(icon, item):
-            webbrowser.open(f"http://localhost:{port}")
+            _open_app_window(f"http://localhost:{port}")
 
         def on_quit(icon, item):
             shutdown_event.set()
@@ -319,8 +319,7 @@ if __name__ == "__main__":
     # ── Mutex check (only in the main process) ──
     if not _acquire_mutex():
         print('  [!] Invoice Manager jau darbojas!')
-        import webbrowser
-        webbrowser.open('http://localhost:8001')
+        _open_app_window('http://localhost:8001')
         sys.exit(0)
 
     main()
