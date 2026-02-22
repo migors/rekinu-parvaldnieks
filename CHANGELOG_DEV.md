@@ -62,5 +62,27 @@
 - **Profila iestatījumi:** Pievienota iespēja mainīt lietotājvārdu (ne tikai paroli). Lietotājvārds tiek automātiski ielādēts no pašreizējā profila.
 - **HTML rēķina priekšskatījums:** Pievienots pasta indekss (LV-XXXX) klienta adresei — tagad sakrīt ar PDF versiju.
 
+## 9. Rēķina kartiņas uzlabojumi un "Saglabāt kā" (2026-02-22)
+
+### Rēķina kartiņas UX
+- **Dinamisks virsraksts:** Veidojot jaunu rēķinu, virsrakstā uzreiz rāda nākamo automātiski piešķiramo numuru (piemēram, `Jauns rēķins NC-000032`). Rediģējot esošu — `Rēķins NC-000030`.
+- **Poga "Saglabāt":** Poga "Izveidot rēķinu" pārdēvēta uz "💾 Saglabāt". Strādā universāli — gan jaunu rēķinu izveidei (POST), gan esošu atjaunināšanai (PUT).
+- **Forma paliek atvērta:** Pēc saglabāšanas forma vairs netiek aizvērta — tā pāriet labošanas režīmā ar saglabātā rēķina datiem.
+- **Poga "📋 Kopēt":** Rediģēšanas režīmā parādās Kopēt poga. Tā duplificē pašreizējo rēķinu ar jauku fade animāciju un atstāj jauno kopiju atvērtu labošanai.
+- **Darbību pogas (tikai rediģēšanas režīmā):**
+  - `👁️ Skatīt` — atver rēķinu HTML priekšskatījumā jaunā cilnē
+  - `📄 Saglabāt PDF` — saglabā PDF ar foldera izvēli (`showSaveFilePicker`)
+  - `📦 E-rēķins` — eksportē XML e-rēķinu ar blob lejupielādi (bez Chrome brīdinājuma)
+  - `✉️ E-pasts` — atver e-pasta sūtīšanas modāli
+- **Jaunas API:** Pievienots `GET /api/invoices/next-number` endpoint nākamā rēķina numura iegūšanai.
+
+### "Saglabāt kā" dialogs — File System Access API
+Izmantojot Chrome/Edge File System Access API (`showSaveFilePicker`), lietotājs var izvēlēties saglabāšanas mapi. Atbalstītas visas eksporta funkcijas:
+- PDF (rēķinu saraksta 📄 ikona, kartiņas "Saglabāt PDF" poga)
+- CSV (augšējā 📊 poga, bulk darbību CSV)
+- ZIP e-rēķini (tikai vairāku rēķinu eksportam, jo .xml Chrome marķē kā bīstamu)
+- Datubāzes rezerves kopija (Rezerves kopija sadaļa)
+- Iekritumu ceptuve: ja pārlūks neatbalsta API (Firefox u.c.), automātiski krīt atpakaļ uz standarta lejupielādi.
+
 ---
 *Izveidots ar AI (Antigravity) palīdzību, lai nodrošinātu pēctecību projektā.*

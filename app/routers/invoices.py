@@ -22,6 +22,13 @@ _template_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 templates = Jinja2Templates(directory=_template_dir)
 
 
+@router.get("/next-number")
+def get_next_invoice_number(db: Session = Depends(get_db), user: str = Depends(get_current_user)):
+    """Preview the next invoice number that will be assigned."""
+    from ..utils import generate_invoice_number
+    number = generate_invoice_number(db)
+    return {"next_number": number}
+
 @router.get("", response_model=schemas.PaginatedInvoices)
 def list_invoices(
     page: int = 1, 

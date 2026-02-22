@@ -1,6 +1,6 @@
 [Setup]
 AppName=NC Invoice Manager
-AppVersion=1.4
+AppVersion=1.5
 AppPublisher=NC
 DefaultDirName={autopf}\NC Invoice Manager
 DefaultGroupName=NC Invoice Manager

@@ -14,6 +14,8 @@ Moderna un viegli lietojama rēķinu sagatavošanas un pārvaldības sistēma, k
 - **☁️ Google Drive rezerves kopijas:** Automātiska rēķinu un datubāzes dublēšana Jūsu Google Drive kontā.
 - **Pakalpojumu katalogs:** Saglabājiet biežāk izmantotos pakalpojumus un preces ātrai rēķinu aizpildīšanai.
 - **Statistika:** Vizualizēts apgrozījuma pārskats pēdējiem mēnešiem.
+- **💾 Viedo rēķinu kartiņa:** Dinamisks virsraksts ar nākamo numuru, universāla "Saglabāt" poga, rēķina kopēšana ar vienu klikšķi, un darbību pogas labošanas režīmā (Skatīt, PDF, E-rēķins, E-pasts).
+- **📁 "Saglabāt kā" dialogs:** Visas lejupielādes (PDF, CSV, E-rēķins XML/ZIP, datubāzes backup) atver Windows "Save As" dialogu foldera izvēlei (Chrome/Edge). Firefox un vecāki pārlūki izmanto standarta lejupielādi.
 
 ## 📸 Sistēmas skati
 

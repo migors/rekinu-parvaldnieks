@@ -42,6 +42,33 @@
             animation: fadeIn .25s ease-in;
         }
 
+        .copy-fade-out {
+            animation: copyFadeOut .2s ease-out forwards;
+        }
+
+        .copy-fade-in {
+            animation: copyFadeIn .35s ease-in forwards;
+        }
+
+        @keyframes copyFadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+        }
+
+        @keyframes copyFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -247,10 +274,10 @@
                     Šo failu vēlāk varēsiet izmantot, lai atjaunotu datus (vienkārši iekopējot to atpakaļ AppData mapē).
                 </p>
 
-                <a href="/api/backup/export" download="invoices_backup.db"
+                <button onclick="saveBackupAs()"
                     class="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition transform hover:scale-105">
                     ⬇️ Lejupielādēt failu (.db)
-                </a>
+                </button>
 
                 <div class="mt-8 text-xs text-slate-500 border-t border-slate-700 pt-6 text-left">
                     <p class="font-semibold text-slate-400 mb-1">Kā atjaunot datus?</p>
@@ -411,7 +438,7 @@
             <td class="py-3 px-4 text-center">
                 <div class="flex justify-center gap-1">
                     <button onclick="window.open('/api/invoices/${inv.id}/html', '_blank')" class="text-blue-400 hover:text-blue-300 text-lg transition" title="Skatīt HTML">👁️</button>
-                    <button onclick="window.open('/api/invoices/${inv.id}/pdf', '_blank')" class="text-gray-400 hover:text-white" title="PDF">📄</button>
+                    <button onclick="downloadPdf(${inv.id}, '${esc(inv.invoice_number)}')" class="text-gray-400 hover:text-white" title="PDF">📄</button>
                     <button onclick="openSendEmailModal(${inv.id}, '${esc(inv.client ? inv.client.email || '' : '')}')" class="text-emerald-400 hover:text-emerald-300" title="Sūtīt e-pastu">✉️</button>
                     <button onclick="editInvoice(${inv.id})" class="text-blue-400 hover:text-blue-300 text-xs transition">✏️</button>
                     <button onclick="deleteInvoice(${inv.id})" class="text-red-500 hover:text-red-400 text-xs transition" title="Dzēst">❌</button>
@@ -480,19 +507,29 @@
                     }
 
                     const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
                     const cd = res.headers.get('Content-Disposition');
                     let filename = ids.length === 1 ? 'e_invoice.xml' : 'e_invoices.zip';
                     if (cd && cd.indexOf('filename=') !== -1) {
                         filename = cd.split('filename=')[1].replace(/"/g, '');
                     }
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
+
+                    if (window.showSaveFilePicker && !filename.endsWith('.xml')) {
+                        const ext = '.zip';
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: filename,
+                            types: [{ description: 'E-rēķini', accept: { 'application/zip': [ext] } }],
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                    } else {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = filename;
+                        document.body.appendChild(a); a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }
 
                     const selectAllCb = document.getElementById('selectAllInvoices');
                     if (selectAllCb) selectAllCb.checked = false;
@@ -500,6 +537,7 @@
                     toast('E-rēķini lejupielādēti!', 'success');
 
                 } catch (err) {
+                    if (err.name === 'AbortError') return;
                     console.error('Export error:', err);
                     toast('Eksporta kļūda', 'error');
                 }
@@ -524,14 +562,24 @@
                     }
 
                     const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'invoices_selected.csv';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
+                    const filename = 'invoices_selected.csv';
+
+                    if (window.showSaveFilePicker) {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: filename,
+                            types: [{ description: 'CSV fails', accept: { 'text/csv': ['.csv'] } }],
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                    } else {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = filename;
+                        document.body.appendChild(a); a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }
 
                     const selectAllCb = document.getElementById('selectAllInvoices');
                     if (selectAllCb) selectAllCb.checked = false;
@@ -539,6 +587,7 @@
                     toast('CSV lejupielādēts!', 'success');
 
                 } catch (err) {
+                    if (err.name === 'AbortError') return;
                     console.error('Export error:', err);
                     toast('Eksporta kļūda', 'error');
                 }
@@ -720,8 +769,38 @@
             }
 
 
-            function exportInvoicesCSV() {
-                window.location.href = '/api/invoices/export/csv';
+            async function exportInvoicesCSV() {
+                try {
+                    const token = getToken();
+                    const res = await fetch('/api/invoices/export/csv', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) { toast('Kļūda eksportējot CSV'); return; }
+                    const blob = await res.blob();
+                    const filename = 'invoices.csv';
+
+                    if (window.showSaveFilePicker) {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: filename,
+                            types: [{ description: 'CSV fails', accept: { 'text/csv': ['.csv'] } }],
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                        toast('CSV saglabāts!');
+                    } else {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = filename;
+                        document.body.appendChild(a); a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }
+                } catch (e) {
+                    if (e.name === 'AbortError') return;
+                    console.error('CSV export error:', e);
+                    toast('Kļūda eksportējot CSV');
+                }
             }
 
             // ── Email Modal ──────────────────────────────────────────────
@@ -1220,7 +1299,7 @@
         <!-- ═══════════════ INVOICE FORM (inline) ═══════════════ -->
         <section id="sec-invoice-form" class="hidden fade-in">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold">Jauns rēķins</h2>
+                <h2 id="invoice-form-title" class="text-2xl font-bold">Jauns rēķins</h2>
                 <button onclick="cancelInvoiceForm()" class="text-gray-400 hover:text-white text-sm transition">✕
                     Atcelt</button>
             </div>
@@ -1305,10 +1384,40 @@
                     </div>
                 </div>
 
-                <button type="submit"
-                    class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-lg transition-all">
-                    ✓ Izveidot rēķinu
-                </button>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <button type="submit"
+                        class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-lg transition-all">
+                        💾 Saglabāt
+                    </button>
+                    <button type="button" id="btn-copy-invoice" onclick="copyInvoice()"
+                        class="hidden bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow transition-all">
+                        📋 Kopēt
+                    </button>
+
+                    <div id="invoice-action-buttons" class="hidden flex gap-2 ml-auto">
+                        <button type="button"
+                            onclick="window.open('/api/invoices/' + document.getElementById('inv-id').value + '/html', '_blank')"
+                            class="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                            title="Skatīt rēķinu">
+                            👁️ Skatīt
+                        </button>
+                        <button type="button" onclick="formSavePdfAs()"
+                            class="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                            title="Saglabāt PDF">
+                            📄 Saglabāt PDF
+                        </button>
+                        <button type="button" onclick="formExportXml()"
+                            class="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                            title="E-rēķins (XML)">
+                            📦 E-rēķins
+                        </button>
+                        <button type="button" onclick="formSendEmail()"
+                            class="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                            title="Nosūtīt e-pastu">
+                            ✉️ E-pasts
+                        </button>
+                    </div>
+                </div>
             </form>
         </section>
 
@@ -1535,6 +1644,40 @@
             t.textContent = msg;
             t.classList.remove('hidden');
             setTimeout(() => t.classList.add('hidden'), 2500);
+        }
+
+        async function downloadPdf(id, invoiceNumber) {
+            try {
+                const token = getToken();
+                const res = await fetch('/api/invoices/' + id + '/pdf', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) { toast('Kļūda lejupielādējot PDF'); return; }
+                const blob = await res.blob();
+                const filename = (invoiceNumber || 'invoice') + '.pdf';
+
+                if (window.showSaveFilePicker) {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{ description: 'PDF dokumenti', accept: { 'application/pdf': ['.pdf'] } }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    toast('PDF saglabāts!');
+                } else {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = filename;
+                    document.body.appendChild(a); a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') return;
+                console.error('PDF download error:', e);
+                toast('Kļūda lejupielādējot PDF');
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -2022,11 +2165,21 @@
         // ═══════════════════════════════════════════════════════════════
         async function openInvoiceForm() {
             try {
-                // Load data — if any call fails, we still show the form
                 await Promise.allSettled([loadClients(), loadServices(), loadSettingsData()]);
             } catch (e) {
                 console.warn('openInvoiceForm preload error:', e);
             }
+
+            // Set dynamic title with next invoice number
+            try {
+                const res = await api('/api/invoices/next-number');
+                document.getElementById('invoice-form-title').innerText = 'Jauns rēķins ' + res.next_number;
+            } catch (e) {
+                document.getElementById('invoice-form-title').innerText = 'Jauns rēķins';
+            }
+            document.getElementById('inv-id').value = '';
+            document.getElementById('btn-copy-invoice').classList.add('hidden');
+            document.getElementById('invoice-action-buttons').classList.add('hidden');
 
             const sel = document.getElementById('inv-client');
             sel.innerHTML = '<option value="">— Izvēlieties klientu —</option>' +
@@ -2058,6 +2211,13 @@
 
             await openInvoiceForm();
 
+            // Set title to current invoice number and show Copy button
+            document.getElementById('invoice-form-title').innerText = 'Rēķins ' + inv.invoice_number;
+            document.getElementById('btn-copy-invoice').classList.remove('hidden');
+            document.getElementById('invoice-action-buttons').classList.remove('hidden');
+            document.getElementById('invoice-action-buttons').style.display = 'flex';
+            document.getElementById('inv-id').value = inv.id;
+
             // Fill form
             const clientSelect = document.getElementById('inv-client');
             if (clientSelect.querySelector(`option[value="${inv.client_id}"]`)) {
@@ -2078,19 +2238,6 @@
             });
 
             recalc();
-
-            // Should probably store ID to support update vs create, 
-            // but current backend POST /api/invoices always creates new.
-            // If we want "Edit", we need PUT /api/invoices/{id}.
-            // Current backend schemas show InvoiceUpdate exists, but let's check crud/main.
-            // For now, if we don't have PUT endpoint for invoices in JS, 
-            // the user might end up creating a duplicate. 
-            // Let's assume the user wants to Clone/Edit. 
-            // Wait, the user specifically asked for "Edit".
-            // I need to check if we support PUT /api/invoices/{id}.
-            // I see update_invoice in crud.py. 
-            // I will add a hidden field for Invoice ID.
-            document.getElementById('inv-id').value = inv.id;
         }
 
         function cancelInvoiceForm() {
@@ -2172,6 +2319,53 @@
             document.getElementById('calc-total').textContent = grandTotal.toFixed(2);
         }
 
+        async function copyInvoice() {
+            // Fade out the form
+            const formSection = document.getElementById('sec-invoice-form');
+            formSection.classList.add('copy-fade-out');
+            formSection.classList.remove('copy-fade-in');
+
+            // Collect data before animation
+            const items = [];
+            document.querySelectorAll('#line-items-tbody tr').forEach(row => {
+                const desc = row.querySelector('[data-field="desc"]').value.trim();
+                if (!desc) return;
+                items.push({
+                    description: desc,
+                    unit: row.querySelector('[data-field="unit"]').value || 'gab.',
+                    quantity: parseFloat(row.querySelector('[data-field="qty"]').value) || 1,
+                    unit_price: parseFloat(row.querySelector('[data-field="price"]').value) || 0,
+                    vat_rate: parseFloat(row.querySelector('[data-field="vat"]').value) || 0,
+                });
+            });
+            if (!items.length) { toast('Pievienojiet vismaz vienu pozīciju'); formSection.classList.remove('copy-fade-out'); return; }
+            const data = {
+                client_id: parseInt(document.getElementById('inv-client').value),
+                date: document.getElementById('inv-date').value,
+                due_date: document.getElementById('inv-due').value,
+                issuer_name: document.getElementById('inv-issuer').value,
+                notes: document.getElementById('inv-notes').value,
+                items,
+            };
+
+            // Wait for fade-out to finish
+            await new Promise(r => setTimeout(r, 200));
+
+            try {
+                const inv = await api('/api/invoices', { method: 'POST', body: data });
+                toast(`Rēķins ${inv.invoice_number} izveidots (kopija)!`);
+                // Open the newly created invoice in the form
+                await editInvoice(inv.id);
+                // Fade in with new content
+                formSection.classList.remove('copy-fade-out');
+                formSection.classList.add('copy-fade-in');
+            } catch (e) {
+                console.error('Copy error:', e);
+                toast('Kļūda kopējot rēķinu');
+                formSection.classList.remove('copy-fade-out');
+            }
+        }
+
         async function submitInvoice(e) {
             e.preventDefault();
             const items = [];
@@ -2204,8 +2398,139 @@
                 inv = await api('/api/invoices', { method: 'POST', body: data });
                 toast(`Rēķins ${inv.invoice_number} izveidots!`);
             }
-            cancelInvoiceForm();
+            // Always stay on the form — switch to edit mode for the saved invoice
+            await editInvoice(inv.id);
             loadInvoices();
+        }
+
+        // ─── Invoice form action buttons ───
+        function formDownloadPdf() {
+            const id = document.getElementById('inv-id').value;
+            if (!id) return;
+            const inv_num = document.getElementById('invoice-form-title').innerText.replace('Rēķins ', '');
+            downloadPdf(parseInt(id), inv_num);
+        }
+
+        async function formSavePdfAs() {
+            const id = document.getElementById('inv-id').value;
+            if (!id) return;
+            const inv_num = document.getElementById('invoice-form-title').innerText.replace('Rēķins ', '');
+            try {
+                const token = getToken();
+                const res = await fetch('/api/invoices/' + id + '/pdf', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) { toast('Kļūda lejupielādējot PDF'); return; }
+                const blob = await res.blob();
+
+                // Use File System Access API to let user choose save location
+                if (window.showSaveFilePicker) {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: (inv_num || 'invoice') + '.pdf',
+                        types: [{ description: 'PDF dokumenti', accept: { 'application/pdf': ['.pdf'] } }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    toast('PDF saglabāts!');
+                } else {
+                    // Fallback for browsers without File System Access API
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = (inv_num || 'invoice') + '.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') return; // User cancelled picker
+                console.error('Save PDF error:', e);
+                toast('Kļūda saglabājot PDF');
+            }
+        }
+
+        async function formExportXml() {
+            const id = document.getElementById('inv-id').value;
+            if (!id) return;
+            try {
+                const token = getToken();
+                const res = await fetch('/api/invoices/export/xml', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ invoice_ids: [parseInt(id)] })
+                });
+                if (!res.ok) { toast('Kļūda eksportējot e-rēķinu'); return; }
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition');
+                let filename = 'e_invoice.xml';
+                if (cd && cd.indexOf('filename=') !== -1) {
+                    filename = cd.split('filename=')[1].replace(/"/g, '');
+                }
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                toast('E-rēķins lejupielādēts!');
+            } catch (e) {
+                if (e.name === 'AbortError') return;
+                console.error('XML export error:', e);
+                toast('Kļūda eksportējot e-rēķinu');
+            }
+        }
+
+        function formSendEmail() {
+            const id = document.getElementById('inv-id').value;
+            if (!id) return;
+            // Get client email from the selected client
+            const clientId = document.getElementById('inv-client').value;
+            const client = clients.find(c => c.id == clientId);
+            const email = client ? client.email || '' : '';
+            openSendEmailModal(parseInt(id), email);
+        }
+
+        async function saveBackupAs() {
+            try {
+                const token = getToken();
+                const res = await fetch('/api/backup/export', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) { toast('Kļūda lejupielādējot datubāzi'); return; }
+                const blob = await res.blob();
+
+                if (window.showSaveFilePicker) {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: 'invoices_backup.db',
+                        types: [{ description: 'SQLite datubāze', accept: { 'application/x-sqlite3': ['.db'] } }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    toast('Datubāze saglabāta!');
+                } else {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'invoices_backup.db';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') return;
+                console.error('Backup save error:', e);
+                toast('Kļūda saglabājot datubāzi');
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════
