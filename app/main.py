@@ -174,8 +174,8 @@ def gdrive_auth(request: Request, db: Session = Depends(get_db), user: str = Dep
     client_secret = settings.get("gdrive_client_secret", "").strip()
     if not client_id or not client_secret:
         return JSONResponse(status_code=400, content={"detail": "Client ID and Client Secret are required in settings"})
-    # Force localhost to match Google Console registration recommendations
-    redirect_uri = "http://localhost:8000/api/gdrive/callback"
+    # Dynamically build callback URL based on current host/port
+    redirect_uri = str(request.url_for("gdrive_callback"))
     auth_url = get_auth_url(client_id, client_secret, redirect_uri)
     return RedirectResponse(auth_url)
 
@@ -187,7 +187,7 @@ def gdrive_callback(code: str, request: Request, db: Session = Depends(get_db)):
     settings = crud.get_settings(db)
     client_id = settings.get("gdrive_client_id", "").strip()
     client_secret = settings.get("gdrive_client_secret", "").strip()
-    redirect_uri = "http://localhost:8000/api/gdrive/callback"
+    redirect_uri = str(request.url_for("gdrive_callback"))
     try:
         refresh_token = exchange_code(code, client_id, client_secret, redirect_uri)
         if refresh_token:

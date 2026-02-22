@@ -75,11 +75,15 @@
   - `✉️ E-pasts` — atver e-pasta sūtīšanas modāli
 - **Jaunas API:** Pievienots `GET /api/invoices/next-number` endpoint nākamā rēķina numura iegūšanai.
 
-## 10. Papildus UI Uzlabojumi un Kļūdu Labojumi (v1.5.1)
+## 10. Papildus UI Uzlabojumi un Kļūdu Labojumi (v1.5.1 un v1.5.2)
 - **Vizuālais apstiprinājums saglabājot:** Spiežot "Saglabāt" rēķina labošanas formā, poga uz 2 sekundēm mainās uz "✅ Saglabāts!" ar zaļu izgaismojumu, skaidri norādot uz sekmīgu darbību.
 - **EDS poga rēķina kartītē:** Pievienota ātrā poga "📤 EDS" tieši rēķina labošanas logā (blakus e-rēķina pogai), ļaujot nosūtīt atvērto rēķinu uz VID.
 - **Pydantic v2 Datumu Kļūda:** Salabots `InvoiceUpdate` shēmas gļuks, kur `Optional[date] = None` izraisīja 422 kļūdu labojot rēķinu. Shēma tagad pieņem `Optional[str]` ar manuālu validāciju un konvertāciju `crud.py` līmenī.
 - **Pārlūka Validācijas Bloķēšana:** Rēķina formai pievienots `novalidate` atribūts, lai novērstu "invalid form control" kļūdas, slēptajiem iestatījumu laukiem bloķējot rēķina saglabāšanu.
+- **Google Drive OAuth kļūdu labojumi:**
+  - Dinamisks *Callback URL*: Labota 400 kļūda ("redirect_uri_mismatch"), aizvietojot cieti iekodēto `localhost:8000` portu ar dinamisku `request.url_for` adresi (piem. `8001`), ko atpazīst Google Cloud.
+  - UI Atgriešanās plūsma: Izmainīta `checkURLParams()` JavaScript loģika, lai pēc veiksmīgas `?gdrive=ok` autorizācijas lapa korekti pārslēgtos atpakaļ uz iestatījumu sadaļu un nemestu lietotāju uz rēķinu sarakstu.
+  - Iestatījumu validācija sinhronizējot: Pievienots frontend paziņojums, ja mēģina nospiest "Sinhronizēt", bet Google Drive uzstādījumos vēl nav izvēlēts "Jā".
 
 ### "Saglabāt kā" dialogs — File System Access API
 Izmantojot Chrome/Edge File System Access API (`showSaveFilePicker`), lietotājs var izvēlēties saglabāšanas mapi. Atbalstītas visas eksporta funkcijas:

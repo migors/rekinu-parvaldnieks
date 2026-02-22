@@ -1240,9 +1240,17 @@
                     </div>
                     <p class="text-xs text-gray-500">
                         ℹ️ Jums jāizveido <b>OAuth 2.0 Client ID</b> Google Cloud Console.<br>
-                        Authorized redirect URI: <code
-                            class="bg-slate-800 px-1 py-0.5 rounded select-all">http://localhost:8000/api/gdrive/callback</code>
+                        Authorized redirect URI: <code id="gdrive-redirect-uri-display"
+                            class="bg-slate-800 px-1 py-0.5 rounded select-all text-blue-300">Tiek ielādēts...</code>
                     </p>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', () => {
+                            const uriDisplay = document.getElementById('gdrive-redirect-uri-display');
+                            if (uriDisplay) {
+                                uriDisplay.textContent = window.location.origin + '/api/gdrive/callback';
+                            }
+                        });
+                    </script>
                     <div class="pt-2">
                         <button type="submit"
                             class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-lg transition-all">
@@ -2156,6 +2164,10 @@
         }
 
         async function syncGDrive() {
+            if (settingsData.gdrive_enabled !== 'true') {
+                toast('⚠️ Lūdzu ieslēdziet Google Drive iestatījumos un noklikšķiniet "Saglabāt"!', 5000);
+                return;
+            }
             try {
                 toast('Sinhronizācija sākta...', 5000);
                 const res = await api('/api/invoices/sync-gdrive', { method: 'POST' });
@@ -2825,8 +2837,8 @@
             }
         }
 
-        // Call on load
-        checkURLParams();
+        // Call on load (moved inside the promise to prevent being overwritten)
+        // checkURLParams(); 
 
         // ═══════════════════════════════════════════════════════════════
         //  HELPERS
@@ -2838,10 +2850,22 @@
         // ═══════════════════════════════════════════════════════════════
         loadSettingsData().then(() => {
             lucide.createIcons();
-            // Init routing
-            // Init routing based on query params
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('tab') === 'invoices') {
+
+            // Check for GDrive callback parameters first
+            const urlParams = new URLSearchParams(window.location.search);
+            const gdriveParam = urlParams.get('gdrive');
+
+            if (gdriveParam === 'ok') {
+                toast('✅ Veiksmīgi pieslēgts Google Drive!');
+                window.history.replaceState({}, document.title, "/");
+                switchTab('settings');
+            } else if (gdriveParam === 'fail') {
+                toast('❌ Kļūda pieslēdzoties Google Drive', 5000);
+                window.history.replaceState({}, document.title, "/");
+                switchTab('settings');
+            }
+            // Init routing based on other query params if no gdrive param
+            else if (urlParams.get('tab') === 'invoices') {
                 switchTab('invoices');
                 // Clean URL but keep path
                 window.history.replaceState({}, document.title, window.location.pathname);
