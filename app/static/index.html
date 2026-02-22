@@ -1303,7 +1303,7 @@
                 <button onclick="cancelInvoiceForm()" class="text-gray-400 hover:text-white text-sm transition">✕
                     Atcelt</button>
             </div>
-            <form onsubmit="submitInvoice(event)"
+            <form onsubmit="submitInvoice(event)" novalidate
                 class="bg-slate-800/60 rounded-xl border border-slate-700 p-6 shadow-xl space-y-6">
                 <input type="hidden" id="inv-id">
                 <div class="grid grid-cols-3 gap-6">
@@ -1385,7 +1385,7 @@
                 </div>
 
                 <div class="flex flex-wrap gap-3 items-center">
-                    <button type="submit"
+                    <button type="submit" id="btn-save-invoice"
                         class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-lg transition-all">
                         💾 Saglabāt
                     </button>
@@ -1405,6 +1405,11 @@
                             class="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
                             title="Saglabāt PDF">
                             📄 Saglabāt PDF
+                        </button>
+                        <button type="button" onclick="formSendEDS()"
+                            class="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                            title="Nosūtīt uz EDS">
+                            📤 EDS
                         </button>
                         <button type="button" onclick="formExportXml()"
                             class="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
@@ -2381,8 +2386,10 @@
                 });
             });
             if (!items.length) { alert('Pievienojiet vismaz vienu pozīciju'); return; }
+            const clientIdVal = parseInt(document.getElementById('inv-client').value);
+            if (!clientIdVal || isNaN(clientIdVal)) { alert('Lūdzu izvēlieties klientu!'); return; }
             const data = {
-                client_id: parseInt(document.getElementById('inv-client').value),
+                client_id: clientIdVal,
                 date: document.getElementById('inv-date').value,
                 due_date: document.getElementById('inv-due').value,
                 issuer_name: document.getElementById('inv-issuer').value,
@@ -2391,16 +2398,32 @@
             };
             const id = document.getElementById('inv-id').value;
             let inv;
-            if (id) {
-                inv = await api('/api/invoices/' + id, { method: 'PUT', body: data });
-                toast(`Rēķins ${inv.invoice_number} atjaunināts!`);
-            } else {
-                inv = await api('/api/invoices', { method: 'POST', body: data });
-                toast(`Rēķins ${inv.invoice_number} izveidots!`);
+            const saveBtn = document.getElementById('btn-save-invoice');
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saglabā...'; }
+            try {
+                if (id) {
+                    inv = await api('/api/invoices/' + id, { method: 'PUT', body: data });
+                } else {
+                    inv = await api('/api/invoices', { method: 'POST', body: data });
+                }
+                // Visual success flash on button
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = '✅ Saglabāts!';
+                    saveBtn.classList.add('ring-2', 'ring-emerald-400', 'shadow-emerald-500/50', 'shadow-lg');
+                    setTimeout(() => {
+                        saveBtn.textContent = '💾 Saglabāt';
+                        saveBtn.classList.remove('ring-2', 'ring-emerald-400', 'shadow-emerald-500/50', 'shadow-lg');
+                    }, 2000);
+                }
+                toast(id ? `Rēķins ${inv.invoice_number} atjaunināts!` : `Rēķins ${inv.invoice_number} izveidots!`);
+                // Always stay on the form — switch to edit mode for the saved invoice
+                await editInvoice(inv.id);
+                loadInvoices();
+            } catch (err) {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Saglabāt'; }
+                throw err;
             }
-            // Always stay on the form — switch to edit mode for the saved invoice
-            await editInvoice(inv.id);
-            loadInvoices();
         }
 
         // ─── Invoice form action buttons ───
@@ -2496,6 +2519,26 @@
             const client = clients.find(c => c.id == clientId);
             const email = client ? client.email || '' : '';
             openSendEmailModal(parseInt(id), email);
+        }
+
+        async function formSendEDS() {
+            const id = document.getElementById('inv-id').value;
+            if (!id) return;
+            if (!confirm('Vai tiešām nosūtīt šo rēķinu uz VID EDS?')) return;
+            try {
+                const res = await api('/api/invoices/send-eds', {
+                    method: 'POST',
+                    body: { invoice_ids: [parseInt(id)] }
+                });
+                if (res.error_count > 0) {
+                    toast(`EDS kļūda: ${res.errors.map(e => e.error).join(', ')}`, 'error');
+                } else {
+                    toast('Rēķins veiksmīgi nosūtīts uz EDS! ✅');
+                }
+            } catch (err) {
+                console.error('EDS send error:', err);
+                toast('Kļūda nosūtot uz EDS', 'error');
+            }
         }
 
         async function saveBackupAs() {

@@ -7,14 +7,16 @@ Moderna un viegli lietojama rēķinu sagatavošanas un pārvaldības sistēma, k
 ## ✨ Galvenās funkcijas
 
 - **Rēķinu ģenerēšana:** Automātiska PDF rēķinu izveide ar profesionālu dizainu.
-- **E-rēķini (XML):** Atbalsts PEPPOL BIS 3.0 (UBL 2.1) standartam, kas ir obligāts darbam ar valsts iestādēm.
-- **🏛️ VID EDS API integrācija:** Tieša rēķinu iesniegšana VID EDS sistēmā pa taisno no lietotnes.
+- **Skaista un funkcionāla saskarne:** Viss vienā logā. Rēķinu ģenerēšana, dublēšana un analītika.
+- **"Save As" lejupielādes:** Atbalsts failu saglabāšanai ar izvēlētu nosaukumu PDF, CSV un XML formātiem.
+- **Vizuāla atgriezeniskā saite:** Uzlabota lietotāja pieredze, piemēram, saglabāšanas pogas apstiprinājuma animācijas un izlecošie toast paziņojumi.
+- **Daudzvalodu atbalsts PDF:** Latviešu rakstzīmju korekta attēlošana PDF rēķinos.
+- **Integrācija ar VID EDS un Google Drive:** Tieša rēķinu sūtīšana uz EDS vienā klikšķī, un automātiska dublēšana mākonī.
 - **Klientu datubāze:** Klientu rekvizītu automātiska ielāde no Latvijas atvērto datu reģistriem (pēc nosaukuma vai reģistrācijas numura).
 - **✉️ E-pasta sūtīšana:** Iespēja nosūtīt sagatavotos rēķinus klientam tieši no lietotnes (SMTP).
 - **☁️ Google Drive rezerves kopijas:** Automātiska rēķinu un datubāzes dublēšana Jūsu Google Drive kontā.
 - **Pakalpojumu katalogs:** Saglabājiet biežāk izmantotos pakalpojumus un preces ātrai rēķinu aizpildīšanai.
 - **Statistika:** Vizualizēts apgrozījuma pārskats pēdējiem mēnešiem.
-- **💾 Viedo rēķinu kartiņa:** Dinamisks virsraksts ar nākamo numuru, universāla "Saglabāt" poga, rēķina kopēšana ar vienu klikšķi, un darbību pogas labošanas režīmā (Skatīt, PDF, E-rēķins, E-pasts).
 - **📁 "Saglabāt kā" dialogs:** Visas lejupielādes (PDF, CSV, E-rēķins XML/ZIP, datubāzes backup) atver Windows "Save As" dialogu foldera izvēlei (Chrome/Edge). Firefox un vecāki pārlūki izmanto standarta lejupielādi.
 
 ## 📸 Sistēmas skati

@@ -42,6 +42,11 @@ def build():
         f'--add-data={templates_dir};app/templates',
 
         # Hidden imports that PyInstaller may miss
+        '--hidden-import=webview',
+        '--hidden-import=webview.platforms.winforms',
+        '--hidden-import=webview.platforms.edgechromium',
+        '--hidden-import=webview.platforms.edgehtml',
+        '--hidden-import=clr',
         '--hidden-import=uvicorn.logging',
         '--hidden-import=uvicorn.loops',
         '--hidden-import=uvicorn.loops.auto',

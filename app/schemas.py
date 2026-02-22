@@ -158,8 +158,8 @@ class InvoiceCreate(InvoiceBase):
 
 class InvoiceUpdate(BaseModel):
     client_id: Optional[int] = None
-    date: Optional[date] = None
-    due_date: Optional[date] = None
+    date: Optional[str] = None
+    due_date: Optional[str] = None
     issuer_name: Optional[str] = None
     notes: Optional[str] = None
     status: Optional[str] = None

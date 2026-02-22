@@ -71,10 +71,15 @@
 - **Poga "📋 Kopēt":** Rediģēšanas režīmā parādās Kopēt poga. Tā duplificē pašreizējo rēķinu ar jauku fade animāciju un atstāj jauno kopiju atvērtu labošanai.
 - **Darbību pogas (tikai rediģēšanas režīmā):**
   - `👁️ Skatīt` — atver rēķinu HTML priekšskatījumā jaunā cilnē
-  - `📄 Saglabāt PDF` — saglabā PDF ar foldera izvēli (`showSaveFilePicker`)
-  - `📦 E-rēķins` — eksportē XML e-rēķinu ar blob lejupielādi (bez Chrome brīdinājuma)
+  - **"Saglabāt kā" dialogi:** Visas eksporta opcijas (CSV, PDF, XML e-rēķins) tagad izmanto `showSaveFilePicker`, ļaujot nomainīt faila nosaukumu pirms lejupielādes (ar *fallback* funkciju pārlūkiem bez šī API).
   - `✉️ E-pasts` — atver e-pasta sūtīšanas modāli
 - **Jaunas API:** Pievienots `GET /api/invoices/next-number` endpoint nākamā rēķina numura iegūšanai.
+
+## 10. Papildus UI Uzlabojumi un Kļūdu Labojumi (v1.5.1)
+- **Vizuālais apstiprinājums saglabājot:** Spiežot "Saglabāt" rēķina labošanas formā, poga uz 2 sekundēm mainās uz "✅ Saglabāts!" ar zaļu izgaismojumu, skaidri norādot uz sekmīgu darbību.
+- **EDS poga rēķina kartītē:** Pievienota ātrā poga "📤 EDS" tieši rēķina labošanas logā (blakus e-rēķina pogai), ļaujot nosūtīt atvērto rēķinu uz VID.
+- **Pydantic v2 Datumu Kļūda:** Salabots `InvoiceUpdate` shēmas gļuks, kur `Optional[date] = None` izraisīja 422 kļūdu labojot rēķinu. Shēma tagad pieņem `Optional[str]` ar manuālu validāciju un konvertāciju `crud.py` līmenī.
+- **Pārlūka Validācijas Bloķēšana:** Rēķina formai pievienots `novalidate` atribūts, lai novērstu "invalid form control" kļūdas, slēptajiem iestatījumu laukiem bloķējot rēķina saglabāšanu.
 
 ### "Saglabāt kā" dialogs — File System Access API
 Izmantojot Chrome/Edge File System Access API (`showSaveFilePicker`), lietotājs var izvēlēties saglabāšanas mapi. Atbalstītas visas eksporta funkcijas:

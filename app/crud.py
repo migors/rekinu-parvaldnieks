@@ -270,6 +270,9 @@ def update_invoice(db: Session, invoice_id: int, data: schemas.InvoiceUpdate) ->
 
     for k, v in update_data.items():
         if v is not None:
+            if k in ['date', 'due_date'] and isinstance(v, str):
+                from datetime import datetime
+                v = datetime.strptime(v, "%Y-%m-%d").date()
             setattr(invoice, k, v)
 
     if items_data is not None:
