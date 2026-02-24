@@ -29,10 +29,13 @@ server_log.txt
 _backup*/
 *backup*.zip
 
-# Dev documentation
+# Dev documentation and extra scripts
 AI_INSTRUCTIONS.md
 CHANGELOG_DEV.md
 invoice_form_updates.md
+create_admin.py
+make_icon.py
+docs/
 
 # Docker (Desktop app version)
 docker-compose.yml
