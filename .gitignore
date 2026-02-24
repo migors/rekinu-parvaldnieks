@@ -17,10 +17,27 @@ build/
 dist/
 *.spec
 *.zip
+*.exe
 
-# Logs
+# Logs and Crash dumps
 *.log
+*crash*.txt
+*error*.txt
 server_log.txt
+
+# Backup directories and files
+_backup*/
+*backup*.zip
+
+# Dev documentation
+AI_INSTRUCTIONS.md
+CHANGELOG_DEV.md
+invoice_form_updates.md
+
+# Docker (Desktop app version)
+docker-compose.yml
+Dockerfile
+.dockerignore
 
 # VS Code
 .vscode/
