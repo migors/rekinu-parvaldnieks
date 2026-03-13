@@ -30,7 +30,7 @@ Moderna un viegli lietojama rēķinu sagatavošanas un pārvaldības sistēma, k
 ![Iestatījumi](docs/images/settings.png)
 *Uzņēmuma rekvizītu, bankas un EDS konfigurācijas iestatījumi.*
 
-## 🛠️ Sistēmas Uzkūves Tehnoloģijas (Tehniskā pieeja)
+## 🛠️ Sistēmas Uzbūves Tehnoloģijas (Tehniskā pieeja)
 
 - **Backend:** Python (FastAPI, SQLAlchemy) lokālam serverim
 - **Frontend:** HTML5, Vanilla JavaScript, Tailwind CSS (moderns un ātrs UI)
