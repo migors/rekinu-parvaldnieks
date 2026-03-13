@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="lv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pieslēgties — Invoice Manager</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-md mx-4">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div
+                class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-2xl mx-auto mb-4">
+                NC</div>
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                Invoice Manager</h1>
+            <p class="text-gray-500 text-sm mt-1">Rēķinu pārvaldības sistēma</p>
+        </div>
+
+        <!-- Login form -->
+        <form id="login-form" onsubmit="doLogin(event)"
+            class="bg-slate-800/80 border border-slate-700 rounded-2xl p-8 shadow-2xl backdrop-blur">
+            <h2 class="text-lg font-semibold text-white mb-6 text-center">Pieslēgties</h2>
+
+            <div id="error-msg"
+                class="hidden bg-red-500/20 border border-red-500/30 text-red-400 text-sm rounded-lg p-3 mb-4"></div>
+
+            <div class="mb-4">
+                <label class="block text-xs text-gray-400 mb-1.5">Lietotājvārds</label>
+                <input id="username" type="text" required autofocus
+                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+                    placeholder="Ievadiet lietotājvārdu">
+            </div>
+            <div class="mb-6">
+                <label class="block text-xs text-gray-400 mb-1.5">Parole</label>
+                <input id="password" type="password" required
+                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+                    placeholder="Ievadiet paroli">
+            </div>
+            <button type="submit" id="login-btn"
+                class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-2.5 rounded-lg font-semibold shadow-lg hover:shadow-blue-500/25 transition-all">
+                Pieslēgties →
+            </button>
+        </form>
+    </div>
+
+    <script>
+        async function doLogin(e) {
+            e.preventDefault();
+            const errEl = document.getElementById('error-msg');
+            errEl.classList.add('hidden');
+            const btn = document.getElementById('login-btn');
+            btn.textContent = 'Lūdzu uzgaidiet...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value,
+                    }),
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.detail || 'Login failed');
+                }
+                const { access_token } = await res.json();
+                localStorage.setItem('token', access_token);
+                document.cookie = `token=${access_token}; path=/; max-age=28800`;
+                window.location.href = '/';
+            } catch (err) {
+                errEl.textContent = err.message === 'Invalid credentials' ? 'Nepareizs lietotājvārds vai parole' : err.message;
+                errEl.classList.remove('hidden');
+            } finally {
+                btn.textContent = 'Pieslēgties →';
+                btn.disabled = false;
+            }
+        }
+    </script>
+
+</body>
+
+</html>

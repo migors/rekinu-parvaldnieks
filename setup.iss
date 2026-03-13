@@ -1,11 +1,11 @@
 [Setup]
 AppName=NC Invoice Manager
-AppVersion=1.5
+AppVersion=1.6
 AppPublisher=NC
 DefaultDirName={autopf}\NC Invoice Manager
 DefaultGroupName=NC Invoice Manager
 OutputDir=dist
-OutputBaseFilename=NC_Invoice_Manager_Setup
+OutputBaseFilename=NC_Invoice_Manager_Setup_v1.6
 SetupIconFile=app_icon.ico
 UninstallDisplayIcon={app}\InvoiceManager.exe
 Compression=lzma

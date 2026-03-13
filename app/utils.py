@@ -10,62 +10,113 @@ import requests
 from typing import Optional
 
 
-# ── Latvian number-to-words ───────────────────────────────────────────
 
-_ONES = [
+# ── Latvian number-to-words (grammar-correct) ────────────────────────
+
+_ONES_M = [
     "", "viens", "divi", "trīs", "četri", "pieci",
     "seši", "septiņi", "astoņi", "deviņi",
 ]
+
 _TEENS = [
     "desmit", "vienpadsmit", "divpadsmit", "trīspadsmit", "četrpadsmit",
     "piecpadsmit", "sešpadsmit", "septiņpadsmit", "astoņpadsmit", "deviņpadsmit",
 ]
+
 _TENS = [
     "", "desmit", "divdesmit", "trīsdesmit", "četrdesmit", "piecdesmit",
     "sešdesmit", "septiņdesmit", "astoņdesmit", "deviņdesmit",
 ]
-_HUNDREDS = [
-    "", "simts", "divsimt", "trīssimt", "četrsimt", "piecsimt",
-    "sešsimt", "septiņsimt", "astoņsimt", "deviņsimt",
-]
 
 
-def _int_to_words(n: int) -> str:
-    """Convert an integer 0-999999 to Latvian words."""
-    if n == 0:
-        return "nulle"
+def _hundreds_prefix(h: int) -> str:
+    """Return the Latvian prefix for hundreds (1–9)."""
+    return ["", "simt", "divsimt", "trīssimt", "četrsimt", "piecsimt",
+            "sešsimt", "septiņsimt", "astoņsimt", "deviņsimt"][h]
 
+
+def _below_1000(n: int) -> str:
+    """Convert 1–999 to Latvian words."""
     parts: list[str] = []
 
-    if n >= 1000:
-        thousands = n // 1000
-        n %= 1000
-        if thousands == 1:
-            parts.append("viens tūkstotis")
-        else:
-            parts.append(f"{_int_to_words(thousands)} tūkstoši")
-
     if n >= 100:
-        parts.append(_HUNDREDS[n // 100])
-        n %= 100
+        h = n // 100
+        remainder = n % 100
+        if remainder == 0:
+            # Exactly N hundred — use nominative "simts"
+            parts.append(["", "simts", "divsimt", "trīssimt", "četrsimt",
+                           "piecsimt", "sešsimt", "septiņsimt", "astoņsimt",
+                           "deviņsimt"][h])
+        else:
+            # N hundred + something — use locative "simt"
+            parts.append(_hundreds_prefix(h))
+        n = remainder
 
     if 10 <= n <= 19:
         parts.append(_TEENS[n - 10])
-        n = 0
     else:
         if n >= 20:
             parts.append(_TENS[n // 10])
             n %= 10
         if n > 0:
-            parts.append(_ONES[n])
+            parts.append(_ONES_M[n])
+
+    return " ".join(parts)
+
+
+def _thousands_form(t: int) -> str:
+    """Return grammatically correct Latvian form for thousands multiplier t."""
+    # Numbers 11-19 take genitive plural "tūkstošu"
+    if 11 <= t % 100 <= 19:
+        return f"{_below_1000(t)} tūkstošu"
+    last = t % 10
+    if last == 1:
+        return f"{_below_1000(t)} tūkstotis" if t == 1 else f"{_below_1000(t)} tūkstoši"
+    if 2 <= last <= 9:
+        return f"{_below_1000(t)} tūkstoši"
+    return f"{_below_1000(t)} tūkstošu"
+
+
+def _int_to_words(n: int) -> str:
+    """Convert integer 0-999 999 999 to Latvian words (lowercase)."""
+    if n == 0:
+        return "nulle"
+
+    parts: list[str] = []
+
+    if n >= 1_000_000:
+        millions = n // 1_000_000
+        n %= 1_000_000
+        last = millions % 10
+        if 11 <= millions % 100 <= 19:
+            parts.append(f"{_below_1000(millions)} miljonu")
+        elif last == 1:
+            parts.append(f"{_below_1000(millions)} miljons")
+        elif 2 <= last <= 9:
+            parts.append(f"{_below_1000(millions)} miljoni")
+        else:
+            parts.append(f"{_below_1000(millions)} miljonu")
+
+    if n >= 1000:
+        thousands = n // 1000
+        n %= 1000
+        parts.append(_thousands_form(thousands))
+
+    if n > 0:
+        parts.append(_below_1000(n))
 
     return " ".join(parts)
 
 
 def number_to_words_lv(amount: float) -> str:
-    """Convert a EUR amount to Latvian words.
+    """Convert a EUR amount to grammatically correct Latvian words.
 
-    Example: 146.50 → 'Simts četrdesmit seši euro un 50 centi'
+    Examples:
+        100.00  → "simt eiro un 00 centi"
+        101.00  → "simt viens eiro un 00 centi"
+        110.00  → "simt desmit eiro un 00 centi"
+        120.00  → "simt divdesmit eiro un 00 centi"
+        1120.00 → "viens tūkstotis simt divdesmit eiro un 00 centi"
     """
     euros = int(amount)
     cents = round((amount - euros) * 100)
@@ -74,11 +125,11 @@ def number_to_words_lv(amount: float) -> str:
     # Capitalize first letter
     euro_words = euro_words[0].upper() + euro_words[1:]
 
-    euro_unit = "euro"
     cent_str = f"{cents:02d}"
-    cent_unit = "centi" if cents != 1 else "cents"
+    cent_unit = "cents" if cents == 1 else "centi"
 
-    return f"{euro_words} {euro_unit} un {cent_str} {cent_unit}"
+    return f"{euro_words} eiro un {cent_str} {cent_unit}"
+
 
 
 # ── Invoice number generation ────────────────────────────────────────
@@ -285,7 +336,7 @@ def generate_invoice_pdf(invoice: Invoice, settings: dict) -> bytes:
 
     # 2. Parties (Supplier | Client)
     
-    def create_party_box(title, name, reg_no, vat_no, address, bank_name, bank_acc, phone, email):
+    def create_party_box(title, name, reg_no, vat_no, address, bank_name, bank_swift, bank_acc, phone, email):
         content = [
             [Paragraph(title, ParagraphStyle('BoxTitle', parent=style_bold, fontSize=8, textColor=colors.HexColor('#6b7280'), textTransform='uppercase'))],
             [Paragraph(name if name else "", style_bold)],
@@ -294,6 +345,7 @@ def generate_invoice_pdf(invoice: Invoice, settings: dict) -> bytes:
         if vat_no: content.append([Paragraph(f"PVN Nr.: {vat_no}", style_normal)])
         content.append([Paragraph(f"Adrese: {address}" if address else "", style_normal)])
         if bank_name: content.append([Paragraph(f"Banka: {bank_name}", style_normal)])
+        if bank_swift: content.append([Paragraph(f"SWIFT: {bank_swift}", style_normal)])
         if bank_acc: content.append([Paragraph(f"Konts: {bank_acc}", style_normal)])
         if phone: content.append([Paragraph(f"Tālr.: {phone}", style_normal)])
         if email: content.append([Paragraph(f"E-pasts: {email}", style_normal)])
@@ -316,7 +368,9 @@ def generate_invoice_pdf(invoice: Invoice, settings: dict) -> bytes:
         settings.get('reg_number', ''),
         settings.get('vat_number', ''),
         settings.get('legal_address', ''),
-        None, None,
+        settings.get('bank1_name', '') or None,
+        settings.get('bank1_swift', '') or None,
+        settings.get('bank1_account', '') or None,
         settings.get('phone', ''),
         settings.get('email', '')
     )
@@ -328,6 +382,7 @@ def generate_invoice_pdf(invoice: Invoice, settings: dict) -> bytes:
         invoice.client.vat_number,
         f"{invoice.client.legal_address}{', ' + invoice.client.postal_code if getattr(invoice.client, 'postal_code', None) else ''}",
         invoice.client.bank_name,
+        invoice.client.bank_swift,
         invoice.client.bank_account,
         None, None
     )
@@ -339,44 +394,7 @@ def generate_invoice_pdf(invoice: Invoice, settings: dict) -> bytes:
     elements.append(parties_table)
     elements.append(Spacer(1, 0.3*cm))
 
-    # 3. Banks (if any)
-    if settings.get('bank1_name') or settings.get('bank2_name'):
-        b1, b2 = None, None
-        
-        if settings.get('bank1_name'):
-            content = [
-                [Paragraph("NORĒĶINU KONTS NR. 1", ParagraphStyle('BankTitle', parent=style_bold, fontSize=8, textColor=colors.HexColor('#1d4ed8')))],
-                [Paragraph(settings.get('bank1_name', ''), style_bold)],
-                [Paragraph(f"SWIFT: {settings.get('bank1_swift', '')}", style_small)],
-                [Paragraph(f"Konts: {settings.get('bank1_account', '')}", style_small)],
-            ]
-            b1 = Table(content, colWidths=[8.5*cm])
-            b1.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#eff6ff')), # blue-50
-                ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#bfdbfe')), # blue-200
-                ('LEFTPADDING', (0,0), (-1,-1), 6),
-                ('TOPPADDING', (0,0), (-1,-1), 6),
-            ]))
-            
-        if settings.get('bank2_name'):
-            content = [
-                [Paragraph("NORĒĶINU KONTS NR. 2", ParagraphStyle('BankTitle', parent=style_bold, fontSize=8, textColor=colors.HexColor('#1d4ed8')))],
-                [Paragraph(settings.get('bank2_name', ''), style_bold)],
-                [Paragraph(f"SWIFT: {settings.get('bank2_swift', '')}", style_small)],
-                [Paragraph(f"Konts: {settings.get('bank2_account', '')}", style_small)],
-            ]
-            b2 = Table(content, colWidths=[8.5*cm])
-            b2.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#eff6ff')),
-                ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#bfdbfe')),
-                ('LEFTPADDING', (0,0), (-1,-1), 6),
-                ('TOPPADDING', (0,0), (-1,-1), 6),
-            ]))
-
-        banks_table = Table([[b1 if b1 else "", "", b2 if b2 else ""]], colWidths=[8.75*cm, 0.5*cm, 8.75*cm])
-        elements.append(banks_table)
-        elements.append(Spacer(1, 0.3*cm))
-
+    # (Banks block removed as it is now integrated into party boxes)
 
     # 4. Items Table
     data = [[

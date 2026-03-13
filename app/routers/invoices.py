@@ -16,9 +16,16 @@ from ..auth import get_current_user
 from .. import crud, schemas
 from ..utils import number_to_words_lv
 
+import sys
+
 router = APIRouter(prefix="/api/invoices", tags=["invoices"])
 
-_template_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
+# Resolve templates path — works in both dev and frozen PyInstaller EXE
+if getattr(sys, 'frozen', False):
+    _base_dir = os.path.join(sys._MEIPASS, "app")
+else:
+    _base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_template_dir = os.path.join(_base_dir, "templates")
 templates = Jinja2Templates(directory=_template_dir)
 
 
